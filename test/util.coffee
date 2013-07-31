@@ -2,6 +2,7 @@ Brauhaus = @Brauhaus ? require 'brauhaus'
 Diff = Brauhaus.Diff ? require('../lib/brauhaus-diff')
 Diff.configure({exportUtil: true})
 assert = assert ? require 'assert'
+murmur = @MurmurHash3 ? require 'imurmurhash'
 
 helper = helper ? require './helper/helper'
 
@@ -186,6 +187,18 @@ describe 'Util', ->
             assert.notEqual Diff.util.hash(obj1), Diff.util.hash(obj2)
             assert.notEqual Diff.util.hash(obj1), Diff.util.hash(obj3)
 
+    describe 'hashObjKeys', ->
+        obj1 = {a: 1, b: 2, c: 3}
+        it 'Should recursively hash the object\'s keys and values', ->
+            expected = new murmur('a:1|b:2|c:3|')
+            hash = murmur()
+            Diff.util.hashObjKeys hash, obj1, ['a', 'b', 'c']
+            assert.equal hash.result(), expected.result()
+
+            hash.reset()
+            Diff.util.hashObjKeys hash, obj1, ['a', ['b', 'c']]
+            assert.equal hash.result(), expected.result()
+
     describe 'diffCopy', ->
         obj1 =
             a: 1
@@ -349,20 +362,20 @@ describe 'Util', ->
         it 'Should handle arrays with different dimensions/shapes', ->
             assert.ok not Diff.util.arrayCompare(arr2, arr1)
 
-    describe 'arrayJoin', ->
-        arr1 = [1, 2]
-        arr2 = [1, 2, [3, 4, 5], 6, [7, [8, 9]]]
+    # describe 'arrayJoin', ->
+    #     arr1 = [1, 2]
+    #     arr2 = [1, 2, [3, 4, 5], 6, [7, [8, 9]]]
 
-        it 'Should serialize simple arrays', ->
-            assert.equal Diff.util.arrayJoin(arr1), '12'
+    #     it 'Should serialize simple arrays', ->
+    #         assert.equal Diff.util.arrayJoin(arr1), '12'
 
-        it 'Should serialize complex arrays sequentially', ->
-            assert.equal Diff.util.arrayJoin(arr2), '123456789'
+    #     it 'Should serialize complex arrays sequentially', ->
+    #         assert.equal Diff.util.arrayJoin(arr2), '123456789'
 
-        it 'Should take object values if the array represents keys', ->
-            keys = ['a', 'b', 'c']
-            obj1 = {a: 1, b: 2, c: 3}
-            assert.equal Diff.util.arrayJoin(keys, obj1), 'a:1|b:2|c:3|'
+    #     it 'Should take object values if the array represents keys', ->
+    #         keys = ['a', 'b', 'c']
+    #         obj1 = {a: 1, b: 2, c: 3}
+    #         assert.equal Diff.util.arrayJoin(keys, obj1), 'a:1|b:2|c:3|'
 
     describe 'getKeyValScore', ->
         it 'Should return 2 for simple key/pair match', ->

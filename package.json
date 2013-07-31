@@ -39,7 +39,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "murmurhash": ">=0.0.2 <1"
+    "imurmurhash": ">=0.0.1 <1"
   },
   "peerDependencies": {
     "brauhaus": ">=0.5.4 <1"

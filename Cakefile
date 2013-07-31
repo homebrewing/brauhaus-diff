@@ -46,10 +46,6 @@ task 'build', 'Build lib from src', ->
 
     run './node_modules/coffee-script/bin/coffee --compile --bare test'
 
-task 'murmurhash', 'Build minified murmurhash library', ->
-    console.log "Building dist/murmurhash.min.js"
-    run "./node_modules/uglify-js/bin/uglifyjs --compress -o dist/murmurhash.min.js ./node_modules/murmurhash/murmurhash.js"
-
 task 'test', 'Run library tests', ->
     run './node_modules/coffee-script/bin/coffee --compile test/helper/helper.coffee', ->
         run './node_modules/mocha/bin/mocha --compilers coffee:coffee-script -R spec --colors test/*.coffee', ->

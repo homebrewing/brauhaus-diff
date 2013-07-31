@@ -13,10 +13,10 @@ To use Brauhaus-Diff in a web browser, simply download the following files and i
 
  * [Download the latest brauhaus.min.js](https://raw.github.com/homebrewing/brauhausjs/master/dist/brauhaus.min.js)
  * [Download the latest brauhaus-diff.min.js](https://raw.github.com/homebrewing/brauhaus-diff/master/dist/brauhaus-diff.min.js)
- * [Download the latest murmurhash.js](https://raw.github.com/perezd/node-murmurhash/master/murmurhash.js) or [a minified version](https://raw.github.com/homebrewing/brauhaus-diff/master/dist/murmurhash.min.js)
+ * [Download the latest imurmurhash.min.js](https://raw.github.com/jensyt/imurmurhash-js/master/imurmurhash.min.js)
 
 ```html
-<script type="text/javascript" src="/scripts/murmurhash.js"></script>
+<script type="text/javascript" src="/scripts/imurmurhash.min.js"></script>
 <script type="text/javascript" src="/scripts/brauhaus.min.js"></script>
 <script type="text/javascript" src="/scripts/brauhaus-diff.min.js"></script>
 <script type="text/javascript">

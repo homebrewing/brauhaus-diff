@@ -9,7 +9,7 @@ https://github.com/homebrewing/brauhaus-diff
 Brauhaus = @Brauhaus ? require 'brauhaus'
 
 # Import Murmur Hash
-murmur = @murmur ? require 'murmurhash'
+murmur = @MurmurHash3 ? require 'imurmurhash'
 
 # Create the top-level diff module
 Diff = if exports? then exports else {}

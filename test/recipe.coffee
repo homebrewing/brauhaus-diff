@@ -57,7 +57,7 @@ describe 'Recipe', ->
         right.add 'spice', {name: 'Random spice'}
         right.add 'yeast', {name: 'Yeast'}
 
-        expected = Diff.parse '{"boilSize":[12,10],"fermentables":[{"weight":[2.2,1],"yield":[75,20],"_h":["1o4wdgh","sx87wo"]},{"name":"Test Fermentable","weight":1,"yield":70,"color":2,"late":true,"_h":["158d476",null]}],"spices":[{"name":"Test spice","weight":1,"aa":0,"use":"smelt","time":45,"form":"pellet","_h":["1uctkbv",null]},{"name":"Random spice","weight":0.025,"aa":0,"use":"boil","time":60,"form":"pellet","_h":[null,"1us1ios"]}],"yeast":[{"form":["solid","liquid"],"_h":["mfcqxm","16drowi"]}]}'
+        expected = Diff.parse '{"boilSize":[12,10],"fermentables":[{"weight":[2.2,1],"yield":[75,20],"_h":["3cbo011","1k3r2o8"]},{"name":"Test Fermentable","weight":1,"yield":70,"color":2,"late":true,"_h":["2a9l8k2",null]}],"spices":[{"name":"Test spice","weight":1,"aa":0,"use":"smelt","time":45,"form":"pellet","_h":["3nido1b",null]},{"name":"Random spice","weight":0.025,"aa":0,"use":"boil","time":60,"form":"pellet","_h":[null,"3oapu6s"]}],"yeast":[{"form":["solid","liquid"],"_h":["18d76iq","2cbviui"]}]}'
 
         diff = Diff.diff left, right
         assert.ok diff instanceof Diff.util.ObjectDiff

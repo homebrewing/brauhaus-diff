@@ -65,11 +65,24 @@ diffutil =
 
     # Compute the hash for a given object.
     hash: (obj) ->
-        key = if obj._diffKeys?
-            diffutil.arrayJoin obj._diffKeys, obj
+        if obj._diffKeys?
+            hash = murmur()
+            diffutil.hashObjKeys hash, obj, obj._diffKeys
         else
-            JSON.stringify(obj)
-        murmur(key).toString(36)
+            hash = murmur(JSON.stringify obj)
+        hash.result().toString(32)
+
+    # Hash the keys (and associated values) for an object
+    hashObjKeys: (hash, obj, keys) ->
+        for val in keys
+            if val instanceof Array
+                diffutil.hashObjKeys hash, obj, val
+            else
+                hash.hash val
+                hash.hash ':'
+                hash.hash obj[val].toString()
+                hash.hash '|'
+        return
 
     # Get a shallow copy of the object containing just the keys that are used
     # for diffing.
@@ -141,14 +154,14 @@ diffutil =
     # obj parameter is specified, the values in the array are considered keys
     # into the object; the resulting string will then contain the object values
     # instead of the array values.
-    arrayJoin: (arr, obj) ->
-        str = ''
-        for val in arr
-            if val instanceof Array
-                str += diffutil.arrayJoin val, obj
-            else
-                str += if obj? then (val + ':' + obj[val] + '|') else val
-        str
+    # arrayJoin: (arr, obj) ->
+    #     str = ''
+    #     for val in arr
+    #         if val instanceof Array
+    #             str += diffutil.arrayJoin val, obj
+    #         else
+    #             str += if obj? then (val + ':' + obj[val] + '|') else val
+    #     str
 
     # Get a "closeness" score for a set of keys and values. The higher the
     # score, the better
