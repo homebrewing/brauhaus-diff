@@ -362,21 +362,6 @@ describe 'Util', ->
         it 'Should handle arrays with different dimensions/shapes', ->
             assert.ok not Diff.util.arrayCompare(arr2, arr1)
 
-    # describe 'arrayJoin', ->
-    #     arr1 = [1, 2]
-    #     arr2 = [1, 2, [3, 4, 5], 6, [7, [8, 9]]]
-
-    #     it 'Should serialize simple arrays', ->
-    #         assert.equal Diff.util.arrayJoin(arr1), '12'
-
-    #     it 'Should serialize complex arrays sequentially', ->
-    #         assert.equal Diff.util.arrayJoin(arr2), '123456789'
-
-    #     it 'Should take object values if the array represents keys', ->
-    #         keys = ['a', 'b', 'c']
-    #         obj1 = {a: 1, b: 2, c: 3}
-    #         assert.equal Diff.util.arrayJoin(keys, obj1), 'a:1|b:2|c:3|'
-
     describe 'getKeyValScore', ->
         it 'Should return 2 for simple key/pair match', ->
             assert.equal Diff.util.getKeyValScore('key', 1, 'key', 1), 2

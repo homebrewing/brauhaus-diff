@@ -64,7 +64,8 @@ describe 'Recipe', ->
         assert.deepEqual diff, expected
 
         applied = Diff.apply left, diff
-        customDeepEqual applied, right
+        #customDeepEqual applied, right
+        assert.equal JSON.stringify(applied), JSON.stringify(right)
 
     it 'Should use _paramMap to construct objects', ->
         left = new Brauhaus.Recipe
@@ -75,7 +76,8 @@ describe 'Recipe', ->
         diff = Diff.diff left, right
         other = Diff.apply left, diff
 
-        customDeepEqual other, right
+        #customDeepEqual other, right
+        assert.equal JSON.stringify(other), JSON.stringify(right)
         assert.ok other.mash instanceof Brauhaus.Mash
         assert.ok other.mash.steps[0] instanceof Brauhaus.MashStep
 

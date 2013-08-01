@@ -150,19 +150,6 @@ diffutil =
                 return false if left[i] isnt right[i]
         return true
 
-    # Convert an array into a string by recursively joining. If the optional
-    # obj parameter is specified, the values in the array are considered keys
-    # into the object; the resulting string will then contain the object values
-    # instead of the array values.
-    # arrayJoin: (arr, obj) ->
-    #     str = ''
-    #     for val in arr
-    #         if val instanceof Array
-    #             str += diffutil.arrayJoin val, obj
-    #         else
-    #             str += if obj? then (val + ':' + obj[val] + '|') else val
-    #     str
-
     # Get a "closeness" score for a set of keys and values. The higher the
     # score, the better
     getKeyValScore: (leftKey, leftVal, rightKey, rightVal) ->
