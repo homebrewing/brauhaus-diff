@@ -256,7 +256,9 @@ class ObjectArrayDiff
         # Look through for unique matches
         pairs = oad.getPairs leftCat, rightCat
 
-        # TODO: levenshtein
+        # Add fuzzy matches (if any)
+        if leftCat.obj? and rightCat.obj?
+            pairs = pairs.concat(oad.fuzzyMatch leftCat, rightCat)
 
         # Second pass, find additions / deletions
         if leftCat.obj?
@@ -542,6 +544,44 @@ class ObjectArrayDiff
         match = oad.bestMatch obj, arr, cat.level + 1
         cat.remove(match) if match?
         match
+
+    # Search for fuzzy matches between the left and right category trees.
+    @fuzzyMatch = (leftCat, rightCat) ->
+        # Create a score matrix that will be used to find the best matches
+        scores = []
+        for leftSubCat in leftCat.obj
+            tmpScores = []
+            for rightSubCat in rightCat.obj
+                tmpScores.push diffutil.getKeyValScore(leftSubCat.key,
+                                                       leftSubCat.val,
+                                                       rightSubCat.key,
+                                                       rightSubCat.val,
+                                                       true)
+            scores.push tmpScores
+
+        state = new FuzzyState scores
+
+        pairs = []
+        while (match = state.next())?
+            [l, r] = match
+            pairs = pairs.concat(oad.getPairs leftCat.obj[l], rightCat.obj[r])
+            if not leftCat.obj[l].obj?
+                scores[l] = [0]
+            if not rightCat.obj[r].obj?
+                for vec in scores
+                    vec[r] = 0
+
+        # Do clean up
+        oad.fuzzyCleanUp leftCat
+        oad.fuzzyCleanUp rightCat
+
+        pairs
+
+    # Cleans up after fuzzy matching
+    @fuzzyCleanUp = (cat) ->
+        for i in [cat.obj.length - 1 .. 0]
+            cat.obj.splice(i, 1) if not cat.obj[i].obj?
+        cat.cleanUp 0, 0
 
     # Convert a regular array into an ObjectArrayDiff
     @fromObject = (arr) ->

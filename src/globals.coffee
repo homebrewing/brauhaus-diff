@@ -11,14 +11,28 @@ Brauhaus = @Brauhaus ? require 'brauhaus'
 # Import Murmur Hash
 murmur = @MurmurHash3 ? require 'imurmurhash'
 
+# Import fast Levenshtein
+levenshtein = @Levenshtein ? require 'fast-levenshtein'
+
 # Create the top-level diff module
 Diff = if exports? then exports else {}
 Brauhaus.Diff = Diff
 
+# Default matching function for fuzzy strings
+defaultFuzzyStrings = (left, right) ->
+    len = Math.max left.length, right.length
+    if len > 3
+        0.25
+    else
+        1 / len
+
+# Global options. See Diff.configure for descriptions of all the options.
 Options =
     exportUtil: false
     usingBrauhausStyles: Brauhaus.STYLES? and typeof Brauhaus.getStyles is 'function'
     removeDefaultValues: false
+    fuzzyStrings: defaultFuzzyStrings
+
 
 ###
 Set package-wide options for diff. Currently supported options are:
@@ -42,6 +56,17 @@ Set package-wide options for diff. Currently supported options are:
         for additions and deletions. Defaults to false. If you only plan on
         diffing recipes or you can keep track of the types used in the diff,
         this can be safely set to true.
+
+    fuzzyStrings: mixed
+        Used to configure fuzzy string matching. If set to false, then fuzzy
+        string matching is disabled. If set to true, fuzzy string matching is
+        enabled with the default match criteria. If set to a number, the number
+        represents the maximum percentage difference allowed to be considered a
+        viable match. If set to a function, the function will be called with
+        the two strings being matched and must return a number indicating the
+        maximum percentage difference allowed to consider this specific pair of
+        strings a viable match. If set to anything else, fuzzy string matching
+        will be disabled.
 ###
 Diff.configure = (options) ->
     if typeof options isnt 'object'
@@ -50,6 +75,16 @@ Diff.configure = (options) ->
     Options.exportUtil = !!options.exportUtil
     Options.usingBrauhausStyles = !!options.usingBrauhausStyles
     Options.removeDefaultValues = !!options.removeDefaultValues
+
+    if options.fuzzyStrings?
+        if options.fuzzyStrings is true
+            Options.fuzzyStrings = defaultFuzzyStrings
+        else if typeof options.fuzzyStrings is 'number'
+            Options.fuzzyStrings = -> options.fuzzyStrings
+        else if typeof options.fuzzyStrings is 'function'
+            Options.fuzzyStrings = options.fuzzyStrings
+        else
+            Options.fuzzyStrings = false
 
     if Options.exportUtil and not Diff.util?
         Diff.util = diffutil

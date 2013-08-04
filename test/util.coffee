@@ -369,7 +369,15 @@ describe 'Util', ->
 
         it 'Should return 1 for key-only match', ->
             assert.equal Diff.util.getKeyValScore('key', 1, 'key', 2), 1
-            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'testa'), 1
+            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'blah'), 1
+
+        it 'Should return between 1 and 2 for fuzzy matches', ->
+            score = Diff.util.getKeyValScore 'key', 'test', 'key', 'testa'
+            assert.ok 1 < score < 2
+            score = Diff.util.getKeyValScore 'key', 'test string', 'key', 'string test'
+            assert.ok 1 < score < 2
+            assert.ok Diff.util.getKeyValScore('key', 'test string', 'key', 'string test') <
+                      Diff.util.getKeyValScore('key', 'test string', 'key', 'test string')
 
         it 'Should handle complex key/pair matches', ->
             assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'b'], [1, 2]), 4
