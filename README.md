@@ -171,7 +171,7 @@ var recipe = Brauhaus.Diff.apply(left, diff);
 console.log(util.inspect(recipe, false, null));
 
 // Apply the changes forward (go from right to left)
-recipe = Brauhaus.Diff.apply(right, diff, 'forward');
+recipe = Brauhaus.Diff.apply(right, diff);
 
 // Print the new recipe in Node.js
 console.log(util.inspect(recipe, false, null));
@@ -252,8 +252,10 @@ Brauhaus.Diff.diff(fermentable, null)
 Brauhaus.Diff
 -------------
 
-### Diff.diff (left, right)
+### Diff.diff (left, right, [options])
 Compute the difference between _left_ and _right_, which can be primitive types, arrays, or objects. A diff object is returned which can be serialized or used to apply changes to other objects. If no changes are found, an empty object is returned.
+
+_Options_ is an optional object containing configuration options for this diff. Any options not provided will use the global defaults. See the section on __Diff Configuration__ for more details.
 
 Brauhaus-Diff treats arrays differently based on their contents. Arrays containing only objects are treated as unordered collections where matches are searched for between _left_ and _right_, while arrays containing mixed types are treated as simple ordered lists with pairwise diffing. See the sections on __Using Custom Types__ and __Diff Format__ for more details.
 
@@ -261,9 +263,10 @@ For the purposes of `Diff.apply`, _left_ is considered the newer object such tha
 
 ---
 
-### Diff.apply (applyTo, diff, [direction], [fail])
+### Diff.apply (applyTo, diff, [options])
+### Diff.apply (applyTo, diff, [direction], [fail]) [ __DEPRECATED__ ]
 
-Apply a diff to an object, array, or primitive type _(applyTo)_, optionally supplying a diff direction and failure mode. A copy of _applyTo_ is returned with the modifications from _diff_.
+Apply a diff to an object, array, or primitive type _(applyTo)_. _Options_ is an optional object containing configuration options for this apply. Any options not provided will use the global defaults. A copy of _applyTo_ is returned with the modifications from _diff_.
 
 _Diff_ can be a single diff object, a single JSON string, an array of diff objects, or an array of JSON strings. If multiple diffs are used, the diffs are applied to the object in the order of iteration. The _direction_ parameter specifies the direction of the diff, i.e. is _applyTo_ on the left (backward) or right (forward), not the direction of iteration for multiple diffs. So when applying the diff backward (left-to-right), the order of iteration must be left-most first; when applying forward (right-to-left), the order of iteration must be right-most first. An example of valid inputs:
 
@@ -289,11 +292,18 @@ Brauhaus.Diff.apply(1, diff)
 // Returns 3
 ```
 
-_Direction_ is the direction to apply the diff. The two basic options are turning a right object into a left object (forward diff) and turning a left object into a right object (backward diff, default). The valid inputs options for _direction_ are:
+The configurable options are provided in the following table in addition to the global options in section __Diff Configuration__.
+
+| Option    | Type                | Default   | Description
+-----------------------------------------------------------------------------------------
+| direction | string              | 'forward' | The direction in which to apply the diff.
+| fail      | boolean or function | true      | The failure mode to use.
+
+The two basic direction options are turning a right object into a left object (forward diff) and turning a left object into a right object (backward diff, default). The valid inputs options for _direction_ are:
 * 'backward', 'b', 'leftToRight', 'left-to-right', 'ltor', or 'l' for a backward diff
 * 'forward', 'f', 'rightToLeft', 'right-to-left', 'rtol', or 'r' for a forward diff
 
-_Fail_ is either a boolean indicating the failure mode or a failure function. Whenever `apply` encounters an inconsistency between _applyTo_ and _diff_, it consults _fail_ for what to do. Inconsistencies can occur when a value in _applyTo_ doesn't match the expected value from _diff_, when an object is missing or already present, etc. When _fail_ is false, all inconsistencies are ignored. When _fail_ is true (default) and an inconsistency is found, `apply` will throw an exception with the following properties:
+Whenever `apply` encounters an inconsistency between _applyTo_ and _diff_, it consults the _fail_ option for what to do. Inconsistencies can occur when a value in _applyTo_ doesn't match the expected value from _diff_, when an object is missing or already present, etc. When _fail_ is false, all inconsistencies are ignored. When _fail_ is true (default) and an inconsistency is found, `apply` will throw an exception with the following properties:
 * `e instanceof Error === true`
 * `e.message` The error message
 * `e.keys` An array containing the nested object keys where the inconsistency was found
@@ -322,14 +332,22 @@ var right = {
         y: 7 } };
 var diff = Brauhaus.Diff.diff(left, right);
 
+// Create the options object using the default failure mode
+options = {
+    direction: 'backward'
+};
+
 // No failure function, exception will be thrown
 Brauhaus.Diff.apply({
     a: 2,
     b: {
         x: 5,
         y: 6 } },
-diff, 'backward');
+diff, options);
 // Error: Diff encountered an inconsistency (key: a, expected: 1, actual: 2)
+
+// Set the failure function
+options.fail = fail;
 
 // Using the fail function for the same input
 Brauhaus.Diff.apply({
@@ -337,7 +355,7 @@ Brauhaus.Diff.apply({
     b: {
         x: 5,
         y: 6 } },
-diff, 'backward', fail);
+diff, options);
 // { a: 2,
 //   b: {
 //      x: 5,
@@ -349,7 +367,7 @@ Brauhaus.Diff.apply({
     b: {
         x: 5,
         y: 3 } },
-diff, 'backward', fail);
+diff, options);
 // Error: Diff encountered an inconsistency (key: b.y, expected: 6, actual: 3)
 ```
 
@@ -422,11 +440,11 @@ If this behavior is undesirable, the `toJSON` function should be removed or repl
 ---
 
 ### Perform custom post-diff functions
-While performing a diff, every changed object is checked for a `postDiff` function on itself, its prototype, and its constructor, in that order. If the function is found, it will be called with the left and right values, along with the diff. This function can modify the diff object if desired. If both left and right would call the same `postDiff` function, it will only be called once, otherwise the function for both objects will be called. An example from Brauhaus.Recipe (modified for readability):
+While performing a diff, every changed object is checked for a `postDiff` function on itself, its prototype, and its constructor, in that order. If the function is found, it will be called with the left and right values, along with the diff and diff options. This function can modify the diff object if desired. If both left and right would call the same `postDiff` function, it will only be called once, otherwise the function for both objects will be called. An example from Brauhaus.Recipe (modified for readability):
 
 ```javascript
-Brauhaus.Recipe.postDiff = function(left, right, diff) {
-    if (Options.usingBrauhausStyles && diff.style) {
+Brauhaus.Recipe.postDiff = function(left, right, diff, options) {
+    if (options.usingBrauhausStyles && diff.style) {
         if (diff.style instanceof ValueDiff) {
             if (diff.style.left.name && diff.style.left.category)
                 if (getStyle(diff.style.left.category, diff.style.left.name))
@@ -453,7 +471,7 @@ Whenever a recipe is diffed, the above code checks to see whether the style was 
 ---
 
 ### Perform custom post-apply functions
-Like `postDiff`, applying changes checks for a `postApply` function that accepts the modified object and the diff passed to `apply`. Any special changes may be made to the object in this function.
+Like `postDiff`, applying changes checks for a `postApply` function that accepts the modified object, the diff, and the options passed to `apply`. Any special changes may be made to the object in this function.
 
 Unexpected Output
 -----------------
