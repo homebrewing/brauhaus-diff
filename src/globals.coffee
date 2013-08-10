@@ -12,9 +12,10 @@ Brauhaus = @Brauhaus ? require 'brauhaus'
 murmur = @MurmurHash3 ? require 'imurmurhash'
 
 # Create the top-level diff module
-Diff = if exports? then exports else {}
+Diff = exports ? {}
 Brauhaus.Diff = Diff
 
+# Default options
 Options =
     exportUtil: false
     usingBrauhausStyles: Brauhaus.STYLES? and typeof Brauhaus.getStyles is 'function'
@@ -47,9 +48,9 @@ Diff.configure = (options) ->
     if typeof options isnt 'object'
         return Diff
 
-    Options.exportUtil = !!options.exportUtil
-    Options.usingBrauhausStyles = !!options.usingBrauhausStyles
-    Options.removeDefaultValues = !!options.removeDefaultValues
+    Options.exportUtil = !!options.exportUtil if options.exportUtil?
+    Options.usingBrauhausStyles = !!options.usingBrauhausStyles if options.usingBrauhausStyles?
+    Options.removeDefaultValues = !!options.removeDefaultValues if options.removeDefaultValues?
 
     if Options.exportUtil and not Diff.util?
         Diff.util = diffutil

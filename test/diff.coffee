@@ -58,17 +58,23 @@ describe 'ValueDiff', ->
         it 'Should work forward and backward (default)', ->
             diff = vd 1, 2
             assert.equal diff.apply(1), 2
-            assert.equal diff.apply(1, 'b'), 2
-            assert.equal diff.apply(2, 'f'), 1
+            assert.equal diff.apply(1, direction: 'b'), 2
+            assert.equal diff.apply(2, direction: 'f'), 1
 
         it 'Should return a value of type if requested', ->
             class F
                 constructor: (@v) ->
 
+            options =
+                direction: 'b'
+                fail: false
+
             diff = vd 1, 2
-            assert.ok diff.apply(1, 'b', false, F) instanceof F
-            assert.equal diff.apply(1, 'b', false, F).v, 2
-            assert.equal diff.apply(2, 'f', false, F).v, 1
+            assert.ok diff.apply(1, options, F) instanceof F
+            assert.equal diff.apply(1, options, F).v, 2
+
+            options.direction = 'f'
+            assert.equal diff.apply(2, options, F).v, 1
 
         it 'Should throw an exception for inconsistent input', ->
             diff = vd 1, 2
@@ -163,17 +169,23 @@ describe 'ObjectDiff', ->
         it 'Should work forward and backward (default)', ->
             diff = new od {a: 1}, {a: 2}
             assert.deepEqual diff.apply({a: 1}), {a: 2}
-            assert.deepEqual diff.apply({a: 1}, 'b'), {a: 2}
-            assert.deepEqual diff.apply({a: 2}, 'f'), {a: 1}
+            assert.deepEqual diff.apply({a: 1}, direction: 'b'), {a: 2}
+            assert.deepEqual diff.apply({a: 2}, direction: 'f'), {a: 1}
 
         it 'Should return a value of type if requested', ->
             class F
                 constructor: (@v) ->
 
+            options =
+                direction: 'b'
+                fail: false
+
             diff = new od {a: 1}, {a: 2}
-            assert.ok diff.apply({a: 1}, 'b', false, F) instanceof F
-            assert.deepEqual diff.apply({a: 1}, 'b', false, F).v, {a: 2}
-            assert.deepEqual diff.apply({a: 2}, 'f', false, F).v, {a: 1}
+            assert.ok diff.apply({a: 1}, options, F) instanceof F
+            assert.deepEqual diff.apply({a: 1}, options, F).v, {a: 2}
+
+            options.direction = 'f'
+            assert.deepEqual diff.apply({a: 2}, options, F).v, {a: 1}
 
         it 'Should throw an exception for inconsistent input', ->
             diff = new od {a: 1}, {a: 2}
@@ -1008,8 +1020,8 @@ describe 'ObjectArrayDiff', ->
             # Note, we can't use new F(2, 1) since chai assert checks the type
             # of the created object, and we didn't pass a constructor to apply
             assert.deepEqual diff.apply([new F(1, 1), new F(1, 2)]), [new F(1, 1), {x: 2, y: 1}]
-            assert.deepEqual diff.apply([new F(1, 1), new F(1, 2)], 'b'), [new F(1, 1), {x: 2, y: 1}]
-            assert.deepEqual diff.apply([new F(2, 1), new F(1, 1)], 'f'), [new F(1, 1), {x: 1, y: 2}]
+            assert.deepEqual diff.apply([new F(1, 1), new F(1, 2)], direction: 'b'), [new F(1, 1), {x: 2, y: 1}]
+            assert.deepEqual diff.apply([new F(2, 1), new F(1, 1)], direction: 'f'), [new F(1, 1), {x: 1, y: 2}]
 
         it 'Should create values of type if requested', ->
             class Q
@@ -1018,7 +1030,7 @@ describe 'ObjectArrayDiff', ->
                 _diffKeys: ['x', 'y']
 
             diff = new oad [new Q({x: 1, y: 1})], [new Q({x: 2, y: 1}), new Q({x: 1, y: 1})]
-            f = diff.apply [new Q({x: 1, y: 1})], 'b', false, Q
+            f = diff.apply [new Q({x: 1, y: 1})], {direction: 'b', fail: false}, Q
             assert.ok f[0] instanceof Q and f[1] instanceof Q
             assert.deepEqual f[1], new Q({x: 2, y: 1})
 
@@ -1030,7 +1042,8 @@ describe 'ObjectArrayDiff', ->
             assert.throws (-> diff.apply [], 'r'), Error
             assert.throws (-> diff.apply [new F(1, 1), new F(1, 2), new F(2, 1)]), Error
             assert.doesNotThrow (-> diff.apply [new F(1, 1), new F(1, 2)])
-            assert.doesNotThrow (-> diff.apply [new F(2, 1), new F(1, 1)], 'l', false, F)
+            assert.doesNotThrow (-> diff.apply [new F(2, 1), new F(1, 1)], {direction: 'l', fail: false}, F)
+            assert.doesNotThrow (-> diff.apply [new F(1, 2), new F(1, 1)], {direction: 'r', fail: false}, F)
 
             diff = new oad [new F(1, 2)], [new F(1, 3)]
             assert.throws (-> diff.apply [new F(2, 2)]), Error

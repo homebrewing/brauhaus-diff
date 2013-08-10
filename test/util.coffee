@@ -215,20 +215,21 @@ describe 'Util', ->
             toJSON: -> {@a, @b, @_c}
 
         it 'Should not copy private keys', ->
-            assert.deepEqual Diff.util.diffCopy(obj2), {a: 1, b: 2}
+            assert.deepEqual Diff.util.diffCopy(obj2, {}), {a: 1, b: 2}
 
         it 'Should not copy functions', ->
-            assert.deepEqual Diff.util.diffCopy(obj1), [1, 2]
+            assert.deepEqual Diff.util.diffCopy(obj1, {}), [1, 2]
 
         it 'Should use toJSON when available', ->
-            assert.deepEqual Diff.util.diffCopy(obj1), [1, 2]
-            assert.deepEqual Diff.util.diffCopy(obj3), {a: 1, b: 2}
+            assert.deepEqual Diff.util.diffCopy(obj1, {}), [1, 2]
+            assert.deepEqual Diff.util.diffCopy(obj3, {}), {a: 1, b: 2}
 
         it 'Should return the same value if not an object', ->
-            assert.equal Diff.util.diffCopy(1), 1
+            assert.equal Diff.util.diffCopy(1, {}), 1
 
         it 'Should ignore default values if requested', ->
             Diff.configure {removeDefaultValues: true}
+            options = Diff.util.ConvertToOptions({})
 
             class X
                 constructor: (x, y) ->
@@ -237,23 +238,34 @@ describe 'Util', ->
                 x: 1
                 y: 2
 
-            x = Diff.util.diffCopy new X
+            x = Diff.util.diffCopy new X, options
             assert.ok not x.x?
             assert.ok not x.y?
 
-            x = Diff.util.diffCopy new X 2
+            x = Diff.util.diffCopy new X(2), options
             assert.ok x.x?
             assert.ok not x.y?
 
             Diff.configure {removeDefaultValues: false}
 
-            x = Diff.util.diffCopy new X
+            x = Diff.util.diffCopy new X, options
             assert.ok x.x?
             assert.ok x.y?
 
-            x = Diff.util.diffCopy new X 2
+            x = Diff.util.diffCopy new X(2), options
             assert.ok x.x?
             assert.ok x.y?
+
+            # Test local version
+            options.removeDefaultValues = true
+
+            x = Diff.util.diffCopy new X, options
+            assert.ok not x.x?
+            assert.ok not x.y?
+
+            x = Diff.util.diffCopy new X(2), options
+            assert.ok x.x?
+            assert.ok not x.y?
 
     describe 'shallowCopy', ->
         it 'Should work for objects', ->
@@ -465,13 +477,13 @@ describe 'FailState', ->
         f.pop()
         assert.deepEqual f.state, []
 
-    describe 'toFailState', ->
+    describe 'constructor', ->
         it 'Should return the passed in value if already a FailState', ->
             f = new Diff.util.FailState
-            assert.equal Diff.util.FailState.toFailState(f), f
+            assert.equal Diff.util.FailState(f), f
 
         it 'Should wrap the value in a fail state otherwise', ->
-            assert.ok Diff.util.FailState.toFailState(true) instanceof Diff.util.FailState
+            assert.ok Diff.util.FailState(true) instanceof Diff.util.FailState
 
     describe 'check', ->
         checkException = (state, expected, actual) ->
@@ -540,3 +552,33 @@ describe 'FailState', ->
             f.push 'a'
             f.push 'q'
             f.check 'test', 4
+
+describe 'ConvertToOptions', ->
+    it 'Should default to global options', ->
+        opt = Diff.util.ConvertToOptions()
+        assert.equal opt.exportUtil, true
+        assert.equal opt.usingBrauhausStyles, false
+        assert.equal opt.removeDefaultValues, false
+
+    it 'Should return the passed object if already options', ->
+        opt = Diff.util.ConvertToOptions()
+        assert.equal Diff.util.ConvertToOptions(opt), opt
+
+    it 'Should use local options if provided', ->
+        opt = Diff.util.ConvertToOptions {exportUtil: false, removeDefaultValues: true}
+        assert.equal opt.exportUtil, false
+        assert.equal opt.usingBrauhausStyles, false
+        assert.equal opt.removeDefaultValues, true
+
+    it 'Should ignore prototype properties', ->
+        class F
+            test: false
+
+        f = new F
+        f.x = 1
+        f.y = 2
+
+        opt = Diff.util.ConvertToOptions f
+        assert.equal opt.x, 1
+        assert.equal opt.y, 2
+        assert.ok not opt.test?

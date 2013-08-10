@@ -2,8 +2,10 @@
 Compute the diff between two objects or arrays, left and right. Left is
 considered the newer object, such that the returned diff will convert right to
 left when applied forward, or convert left to right when applied backward.
+Options is an object containing any of the globally configurable options. Any
+option not provided will use the global default.
 ###
-Diff.diff = (left, right) ->
+Diff.diff = (left, right, options) ->
     if diffutil.areAll Array, left, right
         objtest = (arr) ->
             for obj in arr
@@ -11,13 +13,13 @@ Diff.diff = (left, right) ->
             true
 
         if objtest(left) and objtest(right)
-            diff = new ObjectArrayDiff left, right
+            diff = new ObjectArrayDiff left, right, options
         else
-            diff = new ObjectDiff left, right
+            diff = new ObjectDiff left, right, options
     else if diffutil.areAll(Object, left, right) and diffutil.compatibleTypes(left, right)
-        diff = new ObjectDiff left, right
+        diff = new ObjectDiff left, right, options
     else if left != right
-        diff = new ValueDiff left, right
+        diff = new ValueDiff left, right, options
     else
         diff = {}
 
@@ -25,7 +27,7 @@ Diff.diff = (left, right) ->
 
 # Run the post diff function for a diff. If the post diff functions for left
 # and right are the same, only call it once, otherwise call both.
-postDiff = (left, right, diff) ->
+postDiff = (left, right, diff, options) ->
     if typeof left?.postDiff is 'function'
         leftpd = left.postDiff
     else if typeof left?.constructor.postDiff is 'function'
@@ -36,24 +38,36 @@ postDiff = (left, right, diff) ->
     else if typeof right?.constructor.postDiff is 'function'
         rightpd = right.constructor.postDiff
 
-    leftpd(left, right, diff) if leftpd?
-    rightpd(left, right, diff) if rightpd? and rightpd isnt leftpd
+    leftpd(left, right, diff, options) if leftpd?
+    rightpd(left, right, diff, options) if rightpd? and rightpd isnt leftpd
     return # Needed so the result of rightpd isn't returned
 
 ###
 Apply a diff to an object.
 
+DEPRECATED USE: Diff.apply(obj, diff, direction, fail)
+NEW USE: Diff.apply(obj, diff, options)
+
 Diff can be either a single diff object or an array of diffs to be applied.
 If multiple diffs are used, the diffs are applied to the object in the order of
-iteration. The direction specifies the direction of the diff, i.e. is obj on
-the left (backward) or right (forward), not the direction of iteration for
-multiple diffs.
+iteration. The direction option specifies the direction of the diff, i.e. is
+obj on the left (backward) or right (forward), not the direction of iteration
+for multiple diffs.
+
+Options is an object containing any of the globally configurable options, as
+well as:
+    direction: string
+        The direction in which to apply the diff. Valid directions are given
+        below.
+
+    fail: boolean or function
+        The failure mode of the apply. A detailed explanation is given below.
 
 Valid directions are "f", "forward", "rightToLeft", and "rtol" for converting
 a right object to a left object, or "b", "backward", "leftToRight", and "ltor"
 for converting a left object to a right object. Backward diff is the default.
 
-The fail parameter can either be a boolean or a function, indicating whether
+The fail option can either be a boolean or a function, indicating whether
 the diff should abort when it encounters an inconsistency. For instance, if an
 array diff can't find the object it's looking for, or a value diff determines
 the current value isn't what was expected, it is considered an inconsistency.
@@ -78,19 +92,25 @@ Diff.apply = (obj, diff, direction, fail) ->
         for d, i in diff
             diff[i] = Diff.parse(d) if typeof d is 'string'
 
-    if diff instanceof Array
-        obj = d.apply(obj, direction, fail) for d in diff
+    # Convert the options input to a usable options object
+    if typeof direction is 'string'
+        options = ConvertToOptions {direction, fail}
     else
-        obj = diff.apply obj, direction, fail
+        options = ConvertToOptions direction
+
+    if diff instanceof Array
+        obj = d.apply(obj, options) for d in diff
+    else
+        obj = diff.apply obj, options
 
     obj
 
 # Run the post apply function for a diff.
-postApply = (obj, diff, direction) ->
+postApply = (obj, diff, options) ->
     if typeof obj?.postApply is 'function'
-        obj.postApply obj, diff, direction
+        obj.postApply obj, diff, options
     else if typeof obj?.constructor.postApply is 'function'
-        obj.constructor.postApply obj, diff, direction
+        obj.constructor.postApply obj, diff, options
     obj
 
 ###
@@ -130,17 +150,20 @@ convertToDiffObject = (obj) ->
 Diff of two values.
 ###
 class ValueDiff
-    constructor: (left, right) ->
+    constructor: (left, right, options) ->
+        # Convert the options input to a usable options object
+        options = ConvertToOptions options
+
         if left not instanceof Array and left instanceof Object
-            @left = diffutil.diffCopy left
+            @left = diffutil.diffCopy left, options
         else
             @left = left
         if right not instanceof Array and right instanceof Object
-            @right = diffutil.diffCopy right
+            @right = diffutil.diffCopy right, options
         else
             @right = right
 
-        postDiff left, right, this
+        postDiff left, right, this, options
 
     toJSON: ->
         [@left, @right]
@@ -148,17 +171,21 @@ class ValueDiff
     # Apply a diff. The parameters are similar to Diff.apply with the exception
     # of type. If type is given, the returned value will be `new type(obj)`
     # instead of `obj`.
-    apply: (obj, direction, fail, type) ->
-        fail = FailState.toFailState fail
+    apply: (obj, options, type) ->
+        # Convert the options input to a usable options object
+        options = ConvertToOptions options
 
-        if diffutil.getDirection(direction) is diffutil.Directions.LeftToRight
+        fail = options.fail = FailState options.fail
+        options.direction = diffutil.getDirection options.direction
+
+        if options.direction is diffutil.Directions.LeftToRight
             fail.check(@left, obj)
             obj = if type? then new type(@right) else @right
         else
             fail.check(@right, obj)
             obj = if type? then new type(@left) else @left
 
-        postApply obj, this, direction
+        postApply obj, this, options
 
     @fromObject = (obj) ->
         new ValueDiff obj[0], obj[1]
@@ -168,11 +195,14 @@ Diff of a non-array object or an array of non-objects. The keys are those that
 changed on the diffed object, with values set to an array containing [new, old].
 ###
 class ObjectDiff
-    constructor: (left, right) ->
+    constructor: (left, right, options) ->
         # If nothing was passed in, assume we're meant to be constructed from
         # a single object, which will be done by fromObject
         if not left? and not right?
             return
+
+        # Convert the options input to a usable options object
+        options = ConvertToOptions options
 
         # Get the JSON-ified object if it exists
         leftObj = if typeof left.toJSON is 'function' then left.toJSON() else left
@@ -182,29 +212,32 @@ class ObjectDiff
         [leftKeys, rightKeys, bothKeys] = diffutil.getKeys leftObj, rightObj
 
         # Get the keys that were added
-        @[key] = new ValueDiff(leftObj[key], null) for key in leftKeys
+        @[key] = new ValueDiff(leftObj[key], null, options) for key in leftKeys
 
         # Get the keys that were removed
-        @[key] = new ValueDiff(null, rightObj[key]) for key in rightKeys
+        @[key] = new ValueDiff(null, rightObj[key], options) for key in rightKeys
 
         # Handle keys found in both
         for key in bothKeys
-            tmp = Diff.diff leftObj[key] ? null, rightObj[key] ? null
+            tmp = Diff.diff leftObj[key] ? null, rightObj[key] ? null, options
             @[key] = tmp if not diffutil.isEmpty tmp
 
-        postDiff left, right, this
+        postDiff left, right, this, options
 
     # Apply a diff. The parameters are similar to Diff.apply, with the
     # exception of type. If type is given, the returned object will be
     # `new type(obj)` instead of `obj`.
-    apply: (obj, direction, fail, type) ->
+    apply: (obj, options, type) ->
         if obj not instanceof Object
             throw new Error 'Object diff being applied to non-object'
 
         # Create a copy so we don't modify the original object
         obj = diffutil.shallowCopy obj
 
-        fail = FailState.toFailState fail
+        # Convert the options input to a usable options object
+        options = ConvertToOptions options
+
+        fail = options.fail = FailState options.fail
         for key, val of this when diffutil.keyPass key, val
             subtype = obj._paramMap?[key]
             fail.push key
@@ -212,12 +245,12 @@ class ObjectDiff
             if val instanceof ObjectArrayDiff and obj[key] not instanceof Array
                 fail.check 'array', typeof obj[key]
             else
-                obj[key] = val.apply obj[key], direction, fail, subtype
+                obj[key] = val.apply obj[key], options, subtype
             fail.pop()
 
         if type?
             obj = new type(obj)
-        postApply obj, this, direction
+        postApply obj, this, options
 
     # Convert a regular object into an ObjectDiff
     @fromObject: (obj) ->
@@ -234,11 +267,14 @@ class ObjectArrayDiff
     toJSON: ->
         @diff ? []
 
-    constructor: (left, right) ->
+    constructor: (left, right, options) ->
         # If nothing was passed in, assume we're meant to be constructed from
         # a single object, which will be done by fromObject
         if not left? and not right?
             return
+
+        # Convert the options input to a usable options object
+        options = ConvertToOptions options
 
         # Matching pairs are searched for in the following ways:
         # 1. Look for an exact, unique match
@@ -278,19 +314,19 @@ class ObjectArrayDiff
                 delete pair[1]._diffKeyVal
                 diff = Diff.diff pair[0], pair[1]
                 if not diffutil.isEmpty diff
-                    diff._h = new ValueDiff diffutil.hash(pair[0]), diffutil.hash(pair[1])
+                    diff._h = new ValueDiff diffutil.hash(pair[0]), diffutil.hash(pair[1]), options
             else
                 tmp = pair[0] ? pair[1]
                 # Remove cached values before doing the diff
                 delete tmp._diffKeyVal
-                diff = diffutil.diffCopy tmp
+                diff = diffutil.diffCopy tmp, options
                 hash = diffutil.hash tmp
-                diff._h = if pair[0]? then new ValueDiff(hash, null) else new ValueDiff(null, hash)
+                diff._h = if pair[0]? then new ValueDiff(hash, null, options) else new ValueDiff(null, hash, options)
             @diff.push diff if not diffutil.isEmpty diff
 
         delete @diff if @diff.length is 0
 
-        postDiff left, right, this
+        postDiff left, right, this, options
 
     # Get a set of pairs from left and right.
     @getPairs = (left, right) ->
@@ -558,15 +594,18 @@ class ObjectArrayDiff
     # Apply a diff. The parameters are similar to Diff.apply, with the
     # exception of type. If type is given, then any objects added to the array
     # will be `new type(object)` instead of `object`.
-    apply: (obj, direction, fail, type) ->
+    apply: (obj, options, type) ->
         if obj not instanceof Array
             throw new Error 'Array diff being applied to non-array'
 
         # Create a copy so we don't modify the original
         obj = diffutil.shallowCopy obj
 
-        fail = FailState.toFailState fail
-        dir = diffutil.getDirection(direction) is diffutil.Directions.LeftToRight
+        # Convert the options input to a usable options object
+        options = ConvertToOptions options
+
+        fail = options.fail = FailState options.fail
+        dir = diffutil.getDirection(options.direction) is diffutil.Directions.LeftToRight
         # Set up the object hashes to search for the value
         hashes = (diffutil.hash(val) for val in obj)
         for val in @diff
@@ -579,7 +618,7 @@ class ObjectArrayDiff
                 if t is 0
                     # Modify
                     fail.push i
-                    obj[i] = val.apply obj[i], direction, fail
+                    obj[i] = val.apply obj[i], options
                     fail.pop()
                 else if t is 2
                     # Delete
@@ -591,13 +630,13 @@ class ObjectArrayDiff
                     fail.check null, hashes[i]
                     fail.pop()
                     # Only add if we pass the fail check
-                    tmp = diffutil.diffCopy val
+                    tmp = diffutil.diffCopy val, options
                     obj.push if type? then new type(tmp) else tmp
 
             # Couldn't find hash, either we're adding or the object is missing
             else if t is 1
                 # Add
-                tmp = diffutil.diffCopy val
+                tmp = diffutil.diffCopy val, options
                 obj.push if type? then new type(tmp) else tmp
             else
                 # Missing
@@ -605,7 +644,7 @@ class ObjectArrayDiff
                 fail.check (if dir then val._h.left else val._h.right), null
                 fail.pop()
 
-        postApply obj, this, direction
+        postApply obj, this, options
 
     # Get the type of change, possible values are
     # 0. Modification

@@ -86,11 +86,11 @@ diffutil =
 
     # Get a shallow copy of the object containing just the keys that are used
     # for diffing.
-    diffCopy: (obj) ->
+    diffCopy: (obj, options) ->
         copy = if typeof obj.toJSON is 'function' then obj.toJSON() else diffutil.shallowCopy obj, true
         if copy instanceof Object
             delete copy[key] for key, val of copy when not diffutil.keyPass key, val
-            if Options.removeDefaultValues is true
+            if options.removeDefaultValues is true
                 delete copy[key] for key of obj when not obj.hasOwnProperty key
         copy
 
@@ -206,6 +206,8 @@ diffutil =
     getDirection: (direction) ->
         if not direction
             diffutil.Directions.LeftToRight
+        else if typeof direction is 'number'
+            direction
         else
             c = direction.charAt(0).toLowerCase()
             if c isnt 'f' and c isnt 'r' then diffutil.Directions.LeftToRight else diffutil.Directions.RightToLeft
@@ -223,10 +225,18 @@ diffutil =
 Manages the failure state of a diff operation.
 ###
 class FailState
-    constructor: (@fail) ->
-        @fail ?= true
-        @state = []
-        @canFail = typeof @fail is 'function' or !!@fail
+    constructor: (fail) ->
+        # We're already a FailState, so return ourselves
+        if fail instanceof FailState
+            return fail
+        # We were called with `new`, so make it happen
+        else if this instanceof FailState
+            @fail = fail ? true
+            @state = []
+            @canFail = typeof @fail is 'function' or !!@fail
+        # We were called without `new` but need to create a new instance
+        else
+            return new FailState fail
 
     # Add a key to the state
     push: (key) ->
@@ -250,11 +260,28 @@ class FailState
                 e.actual = actual
                 throw e
 
-    # Convert to a FailState object if fail isn't already one
-    @toFailState: (fail) ->
-        if fail not instanceof FailState
-            new FailState fail
+
+###
+Converts an options object into an identifiable type with defaults from the
+global options object. Although this is a class, it should not be called with
+the `new` keyword. The constructor functions in a way to return a new instance
+if needed or the current instance if possible.
+###
+class ConvertToOptions
+    constructor: (options) ->
+        # If the options object was already created, return it
+        if options instanceof ConvertToOptions
+            return options
+        # We were called with `new`, so make it happen
+        else if this instanceof ConvertToOptions
+            if options?
+                @[key] = val for own key, val of options
+        # We were called without `new` but need to create a new instance
         else
-            fail
+            return new ConvertToOptions options
+
+# Set up the prototype so the default options are used for any unset options
+ConvertToOptions.prototype = Options
 
 diffutil.FailState = FailState
+diffutil.ConvertToOptions = ConvertToOptions

@@ -2,8 +2,8 @@
 A function that runs after diffs on Recipes to do some extra processing. This
 is how usingBrauhausStyles is implemented.
 ###
-Brauhaus.Recipe.postDiff = (left, right, diff) ->
-    if Options.usingBrauhausStyles and diff.style?
+Brauhaus.Recipe.postDiff = (left, right, diff, options) ->
+    if options.usingBrauhausStyles and diff.style?
         # Changes were made to the style, so check if it's one of the known
         # styles and remove unnecessary properties
         if diff.style instanceof ValueDiff
@@ -26,8 +26,8 @@ Brauhaus.Recipe.postDiff = (left, right, diff) ->
 A function that runs after Diff.apply on Recipes to do some extra processing.
 This is how usingBrauhausStyles is implemented.
 ###
-Brauhaus.Recipe.postApply = (recipe, diff) ->
-    if Options.usingBrauhausStyles
+Brauhaus.Recipe.postApply = (recipe, diff, options) ->
+    if options.usingBrauhausStyles
         # Changes were made to the style, so check if it's a known style that
         # we can pull from the style list
         style = getStyle recipe.style?.category, recipe.style?.name
