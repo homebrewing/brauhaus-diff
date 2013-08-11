@@ -28,6 +28,9 @@ Diff.diff = (left, right, options) ->
 # Run the post diff function for a diff. If the post diff functions for left
 # and right are the same, only call it once, otherwise call both.
 postDiff = (left, right, diff, options) ->
+    if not options.enablePostDiff
+        return
+
     if typeof left?.postDiff is 'function'
         leftpd = left.postDiff
     else if typeof left?.constructor.postDiff is 'function'
@@ -107,10 +110,11 @@ Diff.apply = (obj, diff, direction, fail) ->
 
 # Run the post apply function for a diff.
 postApply = (obj, diff, options) ->
-    if typeof obj?.postApply is 'function'
-        obj.postApply obj, diff, options
-    else if typeof obj?.constructor.postApply is 'function'
-        obj.constructor.postApply obj, diff, options
+    if options.enablePostApply
+        if typeof obj?.postApply is 'function'
+            obj.postApply obj, diff, options
+        else if typeof obj?.constructor.postApply is 'function'
+            obj.constructor.postApply obj, diff, options
     obj
 
 ###

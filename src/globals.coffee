@@ -20,6 +20,8 @@ Options =
     exportUtil: false
     usingBrauhausStyles: Brauhaus.STYLES? and typeof Brauhaus.getStyles is 'function'
     removeDefaultValues: false
+    enablePostDiff: true
+    enablePostApply: true
 
 ###
 Set package-wide options for diff. Currently supported options are:
@@ -33,7 +35,8 @@ Set package-wide options for diff. Currently supported options are:
         will check whether the style is one of the known styles, and minimize
         the amount of information stored to recreate the style. Defaults to
         true if Brauhaus.STYLES and Brauhaus.getStyles are defined,
-        false otherwise.
+        false otherwise. NOTE: this option requires enablePostDiff and
+        enablePostApply to be true to work right.
     
     removeDefaultValues: bool
         Checks whether properties are own properties or prototype properties
@@ -43,6 +46,15 @@ Set package-wide options for diff. Currently supported options are:
         for additions and deletions. Defaults to false. If you only plan on
         diffing recipes or you can keep track of the types used in the diff,
         this can be safely set to true.
+
+    enablePostDiff: bool
+        Whether the postDiff function should be called on diffed objects.
+        Defaults to true. Disabling this feature can speed up the time it takes
+        to compute a diff.
+
+    enablePostApply: bool
+        Whether the postApply function should be called once an apply is
+        complete. Defaults to true.
 ###
 Diff.configure = (options) ->
     if typeof options isnt 'object'
@@ -51,6 +63,8 @@ Diff.configure = (options) ->
     Options.exportUtil = !!options.exportUtil if options.exportUtil?
     Options.usingBrauhausStyles = !!options.usingBrauhausStyles if options.usingBrauhausStyles?
     Options.removeDefaultValues = !!options.removeDefaultValues if options.removeDefaultValues?
+    Options.enablePostDiff = !!options.enablePostDiff if options.enablePostDiff?
+    Options.enablePostApply = !!options.enablePostApply if options.enablePostApply?
 
     if Options.exportUtil and not Diff.util?
         Diff.util = diffutil

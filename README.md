@@ -211,11 +211,13 @@ Brauhaus.Diff.configure({
 });
 ```
 
-| Option              | Type    | Default | Description |
-| ------------------- | ------- | ------- | ----------- |
-| exportUtil          | boolean | false   | Export internal utility functions as Brauhaus.Diff.util. This is primarily intended for debugging purposes. |
-| usingBrauhausStyles | boolean | depends | When diffing or applying changes to recipes, check if the style is one of the known styles. If so, some info from the diff can be dropped. This option defaults to `true` if the [Brauhaus-Styles](https://github.com/homebrewing/brauhaus-styles) plugin is loaded _before_ Brauhaus-Diff, and false otherwise. |
-| removeDefaultValues | boolean | false   | Some Brauhaus objects use defaults supplied by their prototypes. If set to true, the diff will check whether values are different from default when adding or removing one of these objects. This option is disabled by default because it may remove useful information from the diff if you aren't sure what the prototype chain will be when you apply the changes to another object. If you only plan on diffing recipes, this option can be safely enabled to save some space in the diffs. |
+| Option              | Type    | Default | Description
+| ------------------- | ------- | ------- | -----------
+| exportUtil          | boolean | false   | Export internal utility functions as Brauhaus.Diff.util. This is primarily intended for debugging purposes.
+| usingBrauhausStyles | boolean | depends | When diffing or applying changes to recipes, check if the style is one of the known styles. If so, some info from the diff can be dropped. This option defaults to `true` if the [Brauhaus-Styles](https://github.com/homebrewing/brauhaus-styles) plugin is loaded _before_ Brauhaus-Diff, and false otherwise. Note: this option requires _enablePostDiff_ and _enablePostApply_ to be true.
+| removeDefaultValues | boolean | false   | Some Brauhaus objects use defaults supplied by their prototypes. If set to true, the diff will check whether values are different from default when adding or removing one of these objects. This option is disabled by default because it may remove useful information from the diff if you aren't sure what the prototype chain will be when you apply the changes to another object. If you only plan on diffing recipes, this option can be safely enabled to save some space in the diffs.
+| enablePostDiff      | boolean | true    | Diff checks every diffed object for a postDiff function to be called after a diff. For a single call to `Brauhaus.Diff.diff`, many postDiff calls can be made for every sub-object (and sub-sub-object, etc), which makes diffing slower. If you don't need this functionality, you can disable it for some speed gains. Within Brauhaus, this is only used to implement the _usingBrauhausStyles_ option. If you don't use this option, you can disable postDiff.
+| enablePostApply     | boolean | true    | Diff checks every object for a postApply function to be called after applying a diff. For a single call to `Brauhaus.Diff.apply`, many postApply calls can be made for every sub-object (and sub-sub-object, etc), which makes applying slower. If you don't need this functionality, you can disable it for some speed gains. Within Brauhaus, this is only used to implement the _usingBrauhausStyles_ option. If you don't use this option, you can disable postApply.
 
 An example of the difference from _removeDefaultValues_:
 
@@ -248,6 +250,33 @@ Brauhaus.Diff.diff(fermentable, null)
 //      weight: 2 },
 //   right: null }
 ```
+
+If you want the speed gains of disabling _postDiff_ and _postApply_ (~10%), but still want to use the _usingBrauhausStyles_ option, a workaround is as follows:
+
+```javascript
+// Set the configuration options
+options = {
+    usingBrauhausStyles: true,
+    enablePostDiff: false,
+    enablePostApply: false
+};
+Brauhaus.Diff.configure(options);
+
+// Get the diff and manually call the postDiff function. Note that the postDiff function needs
+// to have the options passed in as its fourth argument.
+var diff = Brauhaus.Diff.diff(leftRecipe, rightRecipe);
+Brauhaus.Recipe.postDiff(leftRecipe, rightRecipe, diff, options);
+
+...
+
+// Apply the diff. Note that the postApply function needs to have the options passed in as its
+// third argument.
+var recipe = Brauhaus.Diff.apply(leftRecipe, diff);
+Brauhaus.Recipe.postApply(recipe, diff, options);
+
+```
+
+Please note that this is not an officially tested use, so it's not guaranteed to work in future releases. Please test it yourself before upgrading if you plan on using it!
 
 Brauhaus.Diff
 -------------

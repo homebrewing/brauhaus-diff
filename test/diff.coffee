@@ -41,6 +41,42 @@ makeOad = (arr) ->
     expected.diff = arr
     expected
 
+describe 'Configuration', ->
+    it 'Should be able to disable postDiff and postApply', ->
+        class F
+            constructor: (@x, @y) ->
+
+            postDiff: (left, right, diff, options) ->
+                throw new Error 'this should not happen'
+
+            postApply: (obj, diff, options) ->
+                throw new Error 'this should not happen'
+
+        left = new F(1, 2)
+        right = new F(2, 2)
+
+        Diff.configure
+            enablePostDiff: false
+            enablePostApply: false
+
+        assert.doesNotThrow (-> Diff.diff left, right)
+        assert.doesNotThrow (-> Diff.apply left, Diff.diff(left, right))
+
+        Diff.configure
+            enablePostDiff: true
+            enablePostApply: true
+
+        assert.throws (-> Diff.diff left, right), 'this should not happen'
+        assert.throws (-> Diff.apply left, Diff.diff(left, right)), 'this should not happen'
+
+        options =
+            enablePostDiff: false
+            enablePostApply: false
+
+        assert.doesNotThrow (-> Diff.diff left, right, options)
+        assert.doesNotThrow (-> Diff.apply left, Diff.diff(left, right, options), options)
+
+
 describe 'ValueDiff', ->
     it 'Should return an array from toJSON', ->
         assert.ok vd(1, 2).toJSON() instanceof Array

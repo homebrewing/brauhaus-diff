@@ -138,6 +138,10 @@ recipeTest = ->
     right.add 'yeast',
         name: 'Yeast'
 
+    Diff.configure
+        enablePostDiff: false
+        enablePostApply: false
+
     t = process.hrtime()
     i = 100000
     while i--
