@@ -324,7 +324,7 @@ Brauhaus.Diff.apply(1, diff)
 The configurable options are provided in the following table in addition to the global options in section __Diff Configuration__.
 
 | Option    | Type                | Default   | Description
------------------------------------------------------------------------------------------
+| --------- | ------------------- | --------- | -----------------------------------------
 | direction | string              | 'forward' | The direction in which to apply the diff.
 | fail      | boolean or function | true      | The failure mode to use.
 
