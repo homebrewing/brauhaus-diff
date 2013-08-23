@@ -156,7 +156,7 @@ diffutil =
         score = 0
         if diffutil.areAll Array, leftKey, rightKey
             for i in [0...leftKey.length]
-                score += diffutil.getKeyValScore leftKey[i], leftVal[i], rightKey[i], rightVal[i]
+                score += diffutil.getKeyValScore leftKey[i], leftVal[i], rightKey[i], rightVal[i], dontScoreKeys
         else if leftKey is rightKey
             score = 1 if not dontScoreKeys
             if leftVal is rightVal
@@ -280,37 +280,5 @@ class FailState
         else
             fail
 
+
 diffutil.FailState = FailState
-
-###
-Manages state for fuzzy matching.
-###
-class FuzzyState
-    constructor: (@scores) ->
-        @l = 0
-
-    next: ->
-        for l in [@l ... @scores.length]
-            @l = l
-            r = @scores[l].indexOf Math.max(@scores[l]...)
-            if @scores[l][r] > 0
-                return @topDown l, r
-
-    topDown: (l, r) ->
-        max = 0
-        lIndex = 0
-        for vec, leftIndex in @scores
-            if vec[r] > max
-                lIndex = leftIndex
-                max = vec[r]
-        if lIndex is l
-            [l, r]
-        else
-            leftRight lIndex, r
-
-    leftRight: (l, r) ->
-        rIndex = @scores[l].indexOf Math.max(@scores[l]...)
-        if rIndex is r
-            [l, r]
-        else
-            topDown l, index

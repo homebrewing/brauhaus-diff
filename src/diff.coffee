@@ -547,29 +547,18 @@ class ObjectArrayDiff
 
     # Search for fuzzy matches between the left and right category trees.
     @fuzzyMatch = (leftCat, rightCat) ->
-        # Create a score matrix that will be used to find the best matches
-        scores = []
-        for leftSubCat in leftCat.obj
-            tmpScores = []
-            for rightSubCat in rightCat.obj
-                tmpScores.push diffutil.getKeyValScore(leftSubCat.key,
-                                                       leftSubCat.val,
-                                                       rightSubCat.key,
-                                                       rightSubCat.val,
-                                                       true)
-            scores.push tmpScores
-
-        state = new FuzzyState scores
-
+        # Loop through fuzzy matches looking for pairs
+        matcher = new oad.FuzzyMatcher leftCat, rightCat
         pairs = []
-        while (match = state.next())?
+        while (match = matcher.next())?
             [l, r] = match
             pairs = pairs.concat(oad.getPairs leftCat.obj[l], rightCat.obj[r])
+            # We took everything in left, clear it
             if not leftCat.obj[l].obj?
-                scores[l] = [0]
+                matcher.clearLeft l
+            # We took everything from the right, clear it
             if not rightCat.obj[r].obj?
-                for vec in scores
-                    vec[r] = 0
+                matcher.clearRight r
 
         # Do clean up
         oad.fuzzyCleanUp leftCat
@@ -662,6 +651,76 @@ class ObjectArrayDiff
                 if dir then 1 else 2
             else
                 throw new Error 'Array diff missing object hashes'
+
+
+###
+Finds matches and manages state for fuzzy matching.
+
+The algorithm first constructs a matrix of all categories in left scored
+against all categories in right. It then starts looking through the matrix for
+the highest score using an iterative process that alternates between searching
+rows and searching columns. Processing starts by looking for the highest score
+in a single row, then looking for the highest score in that column for all
+rows. If the original score was the highest for the column, that match will be
+returned. If not, a row search is done on the new high score and the process
+repeats.
+###
+class ObjectArrayDiff.FuzzyMatcher
+    constructor: (leftCat, rightCat) ->
+        # Create a score matrix that will be used to find the best matches
+        @l = 0
+        @scores = []
+        for leftSubCat in leftCat.obj
+            tmpScores = []
+            for rightSubCat in rightCat.obj
+                tmpScores.push diffutil.getKeyValScore(leftSubCat.key,
+                                                       leftSubCat.val,
+                                                       rightSubCat.key,
+                                                       rightSubCat.val,
+                                                       true)
+            @scores.push tmpScores
+
+    # Get the best match, or undefined if no more matches are left. The return
+    # value is an array of left and right indexes, [l, r], that indicates a
+    # match between leftCat[l] and rightCat[r].
+    next: ->
+        for l in [@l ... @scores.length]
+            @l = l
+            r = @scores[l].indexOf Math.max(@scores[l]...)
+            if @scores[l][r] > 0
+                return @topDown l, r
+
+    # Clear a left match
+    clearLeft: (l) ->
+        @scores[l] = []
+
+    # Clear a right match
+    clearRight: (r) ->
+        vec[r] = 0 for vec in @scores when vec.length >= r
+        return
+
+    # Do a top-down check to see if any higher matches are found in the column
+    # l is row number (left value), r is column number (right value)
+    topDown: (l, r) ->
+        max = 0
+        lIndex = 0
+        for vec, leftIndex in @scores
+            if vec[r] > max
+                lIndex = leftIndex
+                max = vec[r]
+        if lIndex is l
+            [l, r]
+        else
+            @leftRight lIndex, r
+
+    # Do a left-right check to see if any higher matches are found in the row
+    # l is row number (left value), r is column number (right value)
+    leftRight: (l, r) ->
+        rIndex = @scores[l].indexOf Math.max(@scores[l]...)
+        if rIndex is r
+            [l, r]
+        else
+            @topDown l, rIndex
 
 
 oad = ObjectArrayDiff

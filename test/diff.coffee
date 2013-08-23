@@ -1092,7 +1092,129 @@ describe 'ObjectArrayDiff', ->
         assert.deepEqual diff, makeOad([{a: 1, b: 1, c: 1, _h: vd(hash(c1), null)}])
 
     it 'Should support fuzzy string matching', ->
-        # TODO
+        class Fuzz
+            _diffKeys: ['name', 'x', 'y']
+            constructor: (@name, @x, @y) ->
+
+        f1 = new Fuzz 'test', 1, 1
+        f2 = new Fuzz 'tept', 1, 2
+        f3 = new Fuzz 'teps', 0, 1
+        f4 = new Fuzz 'other', 0, 0
+        f5 = new Fuzz 'othe', 2, 1
+        f6 = new Fuzz 'asdasd', 3, 4
+        f7 = new Fuzz 'teps', 1, 2
+        f8 = new Fuzz 'other', 2, 1
+
+        diff = new oad [f1, f2, f4, f6, f8], [f3, f1, f5, f7]
+        expected = makeOad [
+            makeOd(
+                name: vd('tept', 'teps')
+                _h: vd(hash(f2), hash(f7))),
+            makeOd(
+                name: vd('other', 'othe')
+                _h: vd(hash(f8), hash(f5))),
+            {
+                name: 'other',
+                x: 0,
+                y: 0,
+                _h: vd(hash(f4), null)
+            },
+            {
+                name: 'asdasd',
+                x: 3,
+                y: 4,
+                _h: vd(hash(f6), null)
+            },
+            {
+                name: 'teps',
+                x: 0,
+                y: 1,
+                _h: vd(null, hash(f3))
+            }]
+
+        assert.deepEqual diff, expected
+
+describe 'FuzzyMatch', ->
+    class Fuzz
+        _diffKeys: ['name']
+        constructor: (@name) ->
+
+    f1 = new Fuzz 'test'
+    f2 = new Fuzz 'testa'
+    f3 = new Fuzz 'cheese'
+    f4 = new Fuzz 'please'
+    f5 = new Fuzz 'chease'
+    f6 = new Fuzz 'this is a long string'
+    f7 = new Fuzz 'a long string this is'
+    f8 = new Fuzz 'this isnt a long string'
+    f9 = new Fuzz 'nothing'
+    f10 = new Fuzz 'this isnt and long string'
+    f11 = new Fuzz 'this isn and long string'
+
+    left = Diff.util.Category.categorize [f1, f3, f4, f6]
+    right = Diff.util.Category.categorize [f9, f2, f5, f7, f8]
+
+    describe 'topDown', ->
+        it 'Should find the highest value in a column', ->
+            f = new oad.FuzzyMatcher left, right
+            assert.deepEqual f.topDown(0, 1), [0, 1]
+            assert.deepEqual f.topDown(1, 2), [1, 2]
+
+        it 'Should check leftRight if necessary', ->
+
+    describe 'leftRight', ->
+        it 'Should find the highest value in a row', ->
+            f = new oad.FuzzyMatcher left, right
+            assert.deepEqual f.leftRight(0, 1), [0, 1]
+            assert.deepEqual f.leftRight(1, 2), [1, 2]
+            assert.deepEqual f.leftRight(3, 3), [3, 3]
+
+        it 'Should check topDown if necessary', ->
+
+    describe 'clearLeft', ->
+        it 'Should remove a left value from being selected', ->
+            f = new oad.FuzzyMatcher left, right
+            assert.deepEqual f.next(), [0, 1]
+            assert.deepEqual f.next(), [0, 1]
+            f.clearLeft 0
+            assert.deepEqual f.next(), [1, 2]
+            f.clearLeft 1
+            assert.deepEqual f.next(), [3, 3]
+
+    describe 'clearRight', ->
+        it 'Should remove a right value from being selected', ->
+            l = Diff.util.Category.categorize [f1, f3, f4, f6]
+            r = Diff.util.Category.categorize [f1, f2, f5, f7, f8]
+            f = new oad.FuzzyMatcher l, r
+            assert.deepEqual f.next(), [0, 0]
+            assert.deepEqual f.next(), [0, 0]
+            f.clearRight 0
+            assert.deepEqual f.next(), [0, 1]
+            f.clearRight 1
+            assert.deepEqual f.next(), [1, 2]
+
+    describe 'next', ->
+        it 'Should return a high-scored match', ->
+            f = new oad.FuzzyMatcher left, right
+            assert.deepEqual f.next(), [0, 1]
+
+            l = Diff.util.Category.categorize [f1, f2, f4, f6, f7, f10, f11]
+            r = Diff.util.Category.categorize [f2, f8, f11]
+            f = new oad.FuzzyMatcher l, r
+            assert.deepEqual f.next(), [1, 0]
+            f.clearLeft 1
+            f.clearRight 0
+            assert.deepEqual f.next(), [6, 2]
+
+            l = Diff.util.Category.categorize [f1, f3, f4, f6]
+            r = Diff.util.Category.categorize [f2, f5, f7, f8]
+            f = new oad.FuzzyMatcher l, r
+            f.clearLeft 0
+            f.clearRight 0
+            assert.deepEqual f.next(), [1, 1]
+            f.clearLeft 1
+            f.clearRight 1
+            assert.deepEqual f.next(), [3, 2]
 
 describe 'Diff', ->
     describe 'diff', ->

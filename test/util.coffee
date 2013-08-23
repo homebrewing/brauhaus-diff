@@ -385,6 +385,18 @@ describe 'Util', ->
             assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['c', 'b'], [1, 2]), 2
             assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'c'], [2, 2]), 1
 
+        it 'Should optionally ignore key scoring', ->
+            assert.equal Diff.util.getKeyValScore('key', 1, 'key', 1, true), 1
+            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'test', true), 1
+
+            assert.equal Diff.util.getKeyValScore('key', 1, 'key', 2, true), 0
+            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'blah', true), 0
+
+            score = Diff.util.getKeyValScore 'key', 'test', 'key', 'testa', true
+            assert.ok 0 < score < 1
+
+            assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'b'], [1, 2], true), 2
+
     describe 'getOne', ->
         it 'Should return the first available object', ->
             root = Diff.util.Category.categorize [c1, c2, c3, c4]
