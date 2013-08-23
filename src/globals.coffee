@@ -11,9 +11,20 @@ Brauhaus = @Brauhaus ? require 'brauhaus'
 # Import Murmur Hash
 murmur = @MurmurHash3 ? require 'imurmurhash'
 
+# Import fast Levenshtein
+levenshtein = @Levenshtein ? require 'fast-levenshtein'
+
 # Create the top-level diff module
 Diff = exports ? {}
 Brauhaus.Diff = Diff
+
+# Default matching function for fuzzy strings
+defaultFuzzyStrings = (left, right) ->
+    len = Math.max left.length, right.length
+    if len > 3
+        0.25
+    else
+        1 / len
 
 # Default options
 Options =
@@ -22,6 +33,7 @@ Options =
     removeDefaultValues: false
     enablePostDiff: true
     enablePostApply: true
+    fuzzyStrings: defaultFuzzyStrings
 
 ###
 Set package-wide options for diff. Currently supported options are:
@@ -55,6 +67,17 @@ Set package-wide options for diff. Currently supported options are:
     enablePostApply: bool
         Whether the postApply function should be called once an apply is
         complete. Defaults to true.
+
+    fuzzyStrings: mixed
+        Used to configure fuzzy string matching. If set to false, then fuzzy
+        string matching is disabled. If set to true, fuzzy string matching is
+        enabled with the default match criteria. If set to a number, the number
+        represents the maximum percentage difference allowed to be considered a
+        viable match. If set to a function, the function will be called with
+        the two strings being matched and must return a number indicating the
+        maximum percentage difference allowed to consider this specific pair of
+        strings a viable match. If set to anything else, fuzzy string matching
+        will be disabled.
 ###
 Diff.configure = (options) ->
     if typeof options isnt 'object'
@@ -65,6 +88,16 @@ Diff.configure = (options) ->
     Options.removeDefaultValues = !!options.removeDefaultValues if options.removeDefaultValues?
     Options.enablePostDiff = !!options.enablePostDiff if options.enablePostDiff?
     Options.enablePostApply = !!options.enablePostApply if options.enablePostApply?
+
+    if options.fuzzyStrings?
+        if options.fuzzyStrings is true
+            Options.fuzzyStrings = defaultFuzzyStrings
+        else if typeof options.fuzzyStrings is 'number'
+            Options.fuzzyStrings = -> options.fuzzyStrings
+        else if typeof options.fuzzyStrings is 'function'
+            Options.fuzzyStrings = options.fuzzyStrings
+        else
+            Options.fuzzyStrings = false
 
     if Options.exportUtil and not Diff.util?
         Diff.util = diffutil

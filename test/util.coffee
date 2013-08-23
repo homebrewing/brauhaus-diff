@@ -381,13 +381,33 @@ describe 'Util', ->
 
         it 'Should return 1 for key-only match', ->
             assert.equal Diff.util.getKeyValScore('key', 1, 'key', 2), 1
-            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'testa'), 1
+            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'blah'), 1
+
+        it 'Should return between 1 and 2 for fuzzy matches', ->
+            score = Diff.util.getKeyValScore 'key', 'test', 'key', 'testa'
+            assert.ok 1 < score < 2
+            score = Diff.util.getKeyValScore 'key', 'test string', 'key', 'string test'
+            assert.ok 1 < score < 2
+            assert.ok Diff.util.getKeyValScore('key', 'test string', 'key', 'string test') <
+                      Diff.util.getKeyValScore('key', 'test string', 'key', 'test string')
 
         it 'Should handle complex key/pair matches', ->
             assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'b'], [1, 2]), 4
             assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'b'], [1, 1]), 3
             assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['c', 'b'], [1, 2]), 2
             assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'c'], [2, 2]), 1
+
+        it 'Should optionally ignore key scoring', ->
+            assert.equal Diff.util.getKeyValScore('key', 1, 'key', 1, true), 1
+            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'test', true), 1
+
+            assert.equal Diff.util.getKeyValScore('key', 1, 'key', 2, true), 0
+            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'blah', true), 0
+
+            score = Diff.util.getKeyValScore 'key', 'test', 'key', 'testa', true
+            assert.ok 0 < score < 1
+
+            assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'b'], [1, 2], true), 2
 
     describe 'getOne', ->
         it 'Should return the first available object', ->

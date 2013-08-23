@@ -152,14 +152,20 @@ diffutil =
 
     # Get a "closeness" score for a set of keys and values. The higher the
     # score, the better
-    getKeyValScore: (leftKey, leftVal, rightKey, rightVal) ->
+    getKeyValScore: (leftKey, leftVal, rightKey, rightVal, dontScoreKeys) ->
         score = 0
         if diffutil.areAll Array, leftKey, rightKey
             for i in [0...leftKey.length]
-                score += diffutil.getKeyValScore leftKey[i], leftVal[i], rightKey[i], rightVal[i]
-        else
-            if leftKey is rightKey
-                score = if leftVal is rightVal then 2 else 1
+                score += diffutil.getKeyValScore leftKey[i], leftVal[i], rightKey[i], rightVal[i], dontScoreKeys
+        else if leftKey is rightKey
+            score = 1 if not dontScoreKeys
+            if leftVal is rightVal
+                ++score
+            else if Options.fuzzyStrings and typeof leftVal is 'string' and typeof rightVal is 'string'
+                # Multiply match percentage by 0.95 to ensure a perfect match's
+                # score always beats a fuzzy match's score
+                #  e.g. 2 vs (1 + 0.95 * fuzzyMatch)
+                score += 0.95 * diffutil.fuzzyMatch leftVal, rightVal
         score
 
     # Get an array of "closeness" scores for two objects.
@@ -183,6 +189,23 @@ diffutil =
 
         scores.push(0) if scores.length is 0
         scores
+
+    # Get the closeness of two strings as a percentage if the strings pass the
+    # fuzzyStrings filter.
+    fuzzyMatch: (left, right) ->
+        cutoff = Options.fuzzyStrings left, right
+        len = Math.max left.length, right.length
+        lev = levenshtein.get(left, right) / len
+        if lev <= cutoff
+            1 - lev
+        else if left.indexOf(' ') >= 0 and right.indexOf(' ') >= 0
+            # Split the strings, sort, stringify, and then compare again
+            left = left.split(' ').filter((s) -> s != '').sort().join(' ')
+            right = right.split(' ').filter((s) -> s != '').sort().join(' ')
+            lev = levenshtein.get(left, right) / len
+            if lev <= cutoff then 1 - lev else 0
+        else
+            0
 
     # Return the first value we can get from a category or the object itself
     getOne: (val) ->
@@ -282,6 +305,7 @@ class ConvertToOptions
 
 # Set up the prototype so the default options are used for any unset options
 ConvertToOptions.prototype = Options
+
 
 diffutil.FailState = FailState
 diffutil.ConvertToOptions = ConvertToOptions
