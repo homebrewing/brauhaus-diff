@@ -34,6 +34,9 @@ Options =
     enablePostDiff: true
     enablePostApply: true
     fuzzyStrings: defaultFuzzyStrings
+    # Used for global fuzzy string caching, not really options
+    #_fuzzyMatchCache: {}
+    #_fuzzySortCache: {}
 
 ###
 Set package-wide options for diff. Currently supported options are:
@@ -83,21 +86,15 @@ Diff.configure = (options) ->
     if typeof options isnt 'object'
         return Diff
 
-    Options.exportUtil = !!options.exportUtil if options.exportUtil?
-    Options.usingBrauhausStyles = !!options.usingBrauhausStyles if options.usingBrauhausStyles?
-    Options.removeDefaultValues = !!options.removeDefaultValues if options.removeDefaultValues?
-    Options.enablePostDiff = !!options.enablePostDiff if options.enablePostDiff?
-    Options.enablePostApply = !!options.enablePostApply if options.enablePostApply?
+    # Check if the fuzzy matching algorithm is being changed so we can clear
+    # the cache if necessary
+    #if options.fuzzyStrings? and options.fuzzyStrings != Options.fuzzyStrings
+    #    Options._fuzzyMatchCache = {}
+    #    Options._fuzzySortCache = {}
 
-    if options.fuzzyStrings?
-        if options.fuzzyStrings is true
-            Options.fuzzyStrings = defaultFuzzyStrings
-        else if typeof options.fuzzyStrings is 'number'
-            Options.fuzzyStrings = -> options.fuzzyStrings
-        else if typeof options.fuzzyStrings is 'function'
-            Options.fuzzyStrings = options.fuzzyStrings
-        else
-            Options.fuzzyStrings = false
+    # Copy the options into the global object
+    Options[key] = val for own key, val of options
+    ConvertToOptions.normalize Options
 
     if Options.exportUtil and not Diff.util?
         Diff.util = diffutil

@@ -256,6 +256,8 @@ describe 'ObjectDiff', ->
             assert.equal r.x, 3, '3'
 
 describe 'ObjectArrayDiff', ->
+    options = Diff.util.ConvertToOptions {}
+
     describe 'toJSON', ->
         d = new oad([c1, c2], [c1, c3]).toJSON()
         it 'Should return an array', ->
@@ -269,32 +271,32 @@ describe 'ObjectArrayDiff', ->
     describe 'bestMatch', ->
         it 'Should get an exact match where possible', ->
             root = Diff.util.Category.categorize [c1, c2, c3]
-            assert.equal oad.bestMatch(c2, root.obj, 0), c2
-            assert.equal oad.bestMatch(c1, root.obj[0].obj, 1), c1
+            assert.equal oad.bestMatch(c2, root.obj, options, 0), c2
+            assert.equal oad.bestMatch(c1, root.obj[0].obj, options, 1), c1
 
             root = Diff.util.Category.categorize [c1, c2, c3, c4]
-            assert.equal oad.bestMatch(c2, root.obj, 0), c2
+            assert.equal oad.bestMatch(c2, root.obj, options, 0), c2
 
             root = Diff.util.Category.categorize [c1, c2, c3, c4]
-            assert.equal oad.bestMatch(c3, root.obj, 0), c3
+            assert.equal oad.bestMatch(c3, root.obj, options, 0), c3
 
             # Switch to complex keys
             helper.C.setKeys [['a', 'b'], 'c']
             root = Diff.util.Category.categorize [c1, c2, c3, c4]
-            assert.equal oad.bestMatch(c1, root.obj, 0), c1
-            assert.equal oad.bestMatch(c4, root.obj[0].obj, 1), c2
-            assert.equal oad.bestMatch(c2, root.obj[0].obj[1].obj, 2), c2
+            assert.equal oad.bestMatch(c1, root.obj, options, 0), c1
+            assert.equal oad.bestMatch(c4, root.obj[0].obj, options, 1), c2
+            assert.equal oad.bestMatch(c2, root.obj[0].obj[1].obj, options, 2), c2
             helper.C.setKeys ['a', 'b', 'c']
 
         it 'Should return the first choice for non-unique, exact matches', ->
             root = Diff.util.Category.categorize [c1, c2, c3, c4]
-            assert.equal oad.bestMatch(c4, root.obj, 0), c2
+            assert.equal oad.bestMatch(c4, root.obj, options, 0), c2
 
             helper.C.setKeys [['a', 'b'], 'c']
             root = Diff.util.Category.categorize [c1, c2, c3, c4]
-            assert.equal oad.bestMatch(c1, root.obj, 0), c1
-            assert.equal oad.bestMatch(c4, root.obj[0].obj, 1), c2
-            assert.equal oad.bestMatch(c2, root.obj[0].obj[1].obj, 2), c2
+            assert.equal oad.bestMatch(c1, root.obj, options, 0), c1
+            assert.equal oad.bestMatch(c4, root.obj[0].obj, options, 1), c2
+            assert.equal oad.bestMatch(c2, root.obj[0].obj[1].obj, options, 2), c2
             helper.C.setKeys ['a', 'b', 'c']
 
         it 'Should return the best match for simple keys', ->
@@ -303,15 +305,15 @@ describe 'ObjectArrayDiff', ->
             obj3 = new helper.C 2, 1, 2
 
             root = Diff.util.Category.categorize [c1, c2, c3]
-            assert.equal oad.bestMatch(obj1, root.obj, 0), c3
-            assert.equal oad.bestMatch(obj2, root.obj, 0), c1
-            assert.equal oad.bestMatch(obj1, root.obj[0].obj, 1), c1
-            assert.equal oad.bestMatch(obj3, root.obj[0].obj, 1), c2
+            assert.equal oad.bestMatch(obj1, root.obj, options, 0), c3
+            assert.equal oad.bestMatch(obj2, root.obj, options, 0), c1
+            assert.equal oad.bestMatch(obj1, root.obj[0].obj, options, 1), c1
+            assert.equal oad.bestMatch(obj3, root.obj[0].obj, options, 1), c2
 
             root = Diff.util.Category.categorize [c1, c2, c4]
-            assert.equal oad.bestMatch(obj1, root.obj, 0), c1
-            assert.equal oad.bestMatch(obj2, root.obj, 0), c1
-            assert.equal oad.bestMatch(obj3, root.obj, 0), c2
+            assert.equal oad.bestMatch(obj1, root.obj, options, 0), c1
+            assert.equal oad.bestMatch(obj2, root.obj, options, 0), c1
+            assert.equal oad.bestMatch(obj3, root.obj, options, 0), c2
 
         it 'Should return the best match for complex keys', ->
             # Switch to complex keys
@@ -322,28 +324,28 @@ describe 'ObjectArrayDiff', ->
             obj4 = new helper.C 3, 2, 3
 
             root = Diff.util.Category.categorize [c1, c2, c3]
-            assert.equal oad.bestMatch(obj1, root.obj, 0), c1
-            assert.equal oad.bestMatch(obj2, root.obj, 0), c1
-            assert.equal oad.bestMatch(obj4, root.obj, 0), c3
-            assert.equal oad.bestMatch(obj1, root.obj[0].obj, 1), c1
-            assert.equal oad.bestMatch(obj3, root.obj[0].obj, 1), c2
+            assert.equal oad.bestMatch(obj1, root.obj, options, 0), c1
+            assert.equal oad.bestMatch(obj2, root.obj, options, 0), c1
+            assert.equal oad.bestMatch(obj4, root.obj, options, 0), c3
+            assert.equal oad.bestMatch(obj1, root.obj[0].obj, options, 1), c1
+            assert.equal oad.bestMatch(obj3, root.obj[0].obj, options, 1), c2
 
             root = Diff.util.Category.categorize [c1, c2, c4]
-            assert.equal oad.bestMatch(obj1, root.obj, 0), c1
-            assert.equal oad.bestMatch(obj2, root.obj, 0), c1
-            assert.equal oad.bestMatch(obj3, root.obj, 0), c2
+            assert.equal oad.bestMatch(obj1, root.obj, options, 0), c1
+            assert.equal oad.bestMatch(obj2, root.obj, options, 0), c1
+            assert.equal oad.bestMatch(obj3, root.obj, options, 0), c2
             helper.C.setKeys ['a', 'b', 'c']
 
         it 'Should return nothing for no matches', ->
-            assert.ok not oad.bestMatch(c1, [], 0)?
+            assert.ok not oad.bestMatch(c1, [], options, 0)?
 
         it 'Should handle strange/invalid input', ->
-            assert.ok not oad.bestMatch({}, [], 0)?
+            assert.ok not oad.bestMatch({}, [], options, 0)?
 
     describe 'takeBestMatch', ->
         it 'Should remove matches found by bestMatch', ->
             root = Diff.util.Category.categorize [c1, c2, c3]
-            oad.takeBestMatch c1, root
+            oad.takeBestMatch c1, root, options
             expected = new Diff.util.Category '_root', null, []
             expected.add               new Diff.util.Category 'a', 1, []
             expected.obj[0].add        new Diff.util.Category 'b', 1, []
@@ -352,7 +354,7 @@ describe 'ObjectArrayDiff', ->
 
             assert.ok helper.compareBothWays(root, expected)
 
-            oad.takeBestMatch c2, root
+            oad.takeBestMatch c2, root, options
             expected = new Diff.util.Category '_root', null, []
             expected.add new Diff.util.Category 'a', 2, c3
 
@@ -360,20 +362,20 @@ describe 'ObjectArrayDiff', ->
 
         it 'Should not return the same object twice', ->
             root = Diff.util.Category.categorize [c1, c2, c3]
-            assert.notEqual oad.takeBestMatch(c1, root),
-                            oad.takeBestMatch(c1, root)
-            assert.equal oad.takeBestMatch(c1, root), c3
+            assert.notEqual oad.takeBestMatch(c1, root, options),
+                            oad.takeBestMatch(c1, root, options)
+            assert.equal oad.takeBestMatch(c1, root, options), c3
 
         it 'Should not remove anything without a match', ->
             root = new Diff.util.Category 'key', 'val', []
-            assert.ok not oad.takeBestMatch(c2, root)
+            assert.ok not oad.takeBestMatch(c2, root, options)
 
     describe 'uniqueVsUnique', ->
         left = new Diff.util.Category 'key', 'val', c2
         right = new Diff.util.Category 'key', 'val', c4
 
         it 'Should return a single pair', ->
-            assert.deepEqual oad.uniqueVsUnique(left, right), [[c2, c4]]
+            assert.deepEqual oad.uniqueVsUnique(left, right, options), [[c2, c4]]
 
         it 'Should set left.obj and right.obj to null', ->
             assert.equal left.obj, null
@@ -381,46 +383,46 @@ describe 'ObjectArrayDiff', ->
 
     describe 'uniqueVsArray', ->
         it 'Should return an empty list if no matches found', ->
-            assert.deepEqual oad.uniqueVsArray(cat(c1), cat([]), 0, false), []
+            assert.deepEqual oad.uniqueVsArray(cat(c1), cat([]), options, false), []
 
         it 'Should take the best match if possible', ->
             root = cat [c1, c2, c3], 0
-            assert.deepEqual oad.uniqueVsArray(cat(c3, 0), root, false), [[c3, c3]]
-            assert.deepEqual oad.uniqueVsArray(cat(c4, 0), root, false), [[c4, c2]]
+            assert.deepEqual oad.uniqueVsArray(cat(c3, 0), root, options, false), [[c3, c3]]
+            assert.deepEqual oad.uniqueVsArray(cat(c4, 0), root, options, false), [[c4, c2]]
 
             root = Diff.util.Category.categorize [c1, c2, c3]
-            assert.deepEqual oad.uniqueVsArray(cat(c1), root, false), [[c1, c1]]
-            assert.deepEqual oad.uniqueVsArray(cat(c4), root, false), [[c4, c2]]
+            assert.deepEqual oad.uniqueVsArray(cat(c1), root, options, false), [[c1, c1]]
+            assert.deepEqual oad.uniqueVsArray(cat(c4), root, options, false), [[c4, c2]]
 
             helper.C.setKeys ['a', ['b', 'c']]
 
             root = Diff.util.Category.categorize [c1, c2, c3]
-            assert.deepEqual oad.uniqueVsArray(cat(c4), root, false), [[c4, c2]]
-            assert.deepEqual oad.uniqueVsArray(cat(c3), root, false), [[c3, c3]]
+            assert.deepEqual oad.uniqueVsArray(cat(c4), root, options, false), [[c4, c2]]
+            assert.deepEqual oad.uniqueVsArray(cat(c3), root, options, false), [[c3, c3]]
 
             c5 = new helper.C 1, 2, 2
             c6 = new helper.C 2, 2, 2
             root = Diff.util.Category.categorize [c1, c2, c3, c4]
-            assert.deepEqual oad.uniqueVsArray(cat(c5), root, false), [[c5, c2]]
-            assert.deepEqual oad.uniqueVsArray(cat(c6), root, false), [[c6, c3]]
+            assert.deepEqual oad.uniqueVsArray(cat(c5), root, options, false), [[c5, c2]]
+            assert.deepEqual oad.uniqueVsArray(cat(c6), root, options, false), [[c6, c3]]
 
             helper.C.setKeys ['a', 'b', 'c']
 
         it 'Should set unique.obj to null', ->
             root = cat [c1, c2, c3], 0
             c = cat c1, 0
-            oad.uniqueVsArray c, root, false
+            oad.uniqueVsArray c, root, options, false
             assert.equal c.obj, null
 
         it 'Should remove matches from the array', ->
             root = cat [c1, c2, c3], 0
-            oad.uniqueVsArray cat(c3, 0), root, false
+            oad.uniqueVsArray cat(c3, 0), root, options, false
             assert.deepEqual root.obj, [c1, c2]
-            oad.uniqueVsArray cat(c4, 0), root, false
+            oad.uniqueVsArray cat(c4, 0), root, options, false
             assert.equal root.obj, c1
 
             root = Diff.util.Category.categorize [c1, c2, c3]
-            oad.uniqueVsArray cat(c1), root, false
+            oad.uniqueVsArray cat(c1), root, options, false
             expected = new Diff.util.Category '_root', null, []
             expected.add               new Diff.util.Category 'a', 1, []
             expected.obj[0].add        new Diff.util.Category 'b', 1, []
@@ -428,7 +430,7 @@ describe 'ObjectArrayDiff', ->
             expected.add               new Diff.util.Category 'a', 2, c3
             assert.ok helper.compareBothWays(root, expected)
 
-            oad.uniqueVsArray cat(c4), root, false
+            oad.uniqueVsArray cat(c4), root, options, false
             expected = new Diff.util.Category '_root', null, []
             expected.add new Diff.util.Category 'a', 2, c3
             assert.ok helper.compareBothWays(root, expected)
@@ -436,14 +438,14 @@ describe 'ObjectArrayDiff', ->
             helper.C.setKeys ['a', ['b', 'c']]
 
             root = Diff.util.Category.categorize [c1, c2, c3]
-            oad.uniqueVsArray cat(c4), root, false
+            oad.uniqueVsArray cat(c4), root, options, false
             expected = new Diff.util.Category '_root', null, []
             expected.add        new Diff.util.Category 'a', 1, []
             expected.obj[0].add new Diff.util.Category ['b', 'c'], [1, 1], c1
             expected.add        new Diff.util.Category 'a', 2, c3
             assert.ok helper.compareBothWays(root, expected)
 
-            oad.uniqueVsArray cat(c3), root, false
+            oad.uniqueVsArray cat(c3), root, options, false
             expected = new Diff.util.Category '_root', null, []
             expected.add        new Diff.util.Category 'a', 1, []
             expected.obj[0].add new Diff.util.Category ['b', 'c'], [1, 1], c1
@@ -452,7 +454,7 @@ describe 'ObjectArrayDiff', ->
             c5 = new helper.C 1, 2, 2
             c6 = new helper.C 2, 2, 2
             root = Diff.util.Category.categorize [c1, c2, c3, c4]
-            oad.uniqueVsArray cat(c5), root, false
+            oad.uniqueVsArray cat(c5), root, options, false
             expected = new Diff.util.Category '_root', null, []
             expected.add        new Diff.util.Category 'a', 1, []
             expected.obj[0].add new Diff.util.Category ['b', 'c'], [1, 1], c1
@@ -460,7 +462,7 @@ describe 'ObjectArrayDiff', ->
             expected.add        new Diff.util.Category 'a', 2, c3
             assert.ok helper.compareBothWays(root, expected)
 
-            oad.uniqueVsArray cat(c6), root, false
+            oad.uniqueVsArray cat(c6), root, options, false
             expected = new Diff.util.Category '_root', null, []
             expected.add        new Diff.util.Category 'a', 1, []
             expected.obj[0].add new Diff.util.Category ['b', 'c'], [1, 1], c1
@@ -471,91 +473,91 @@ describe 'ObjectArrayDiff', ->
 
         it 'Should handle all key levels', ->
             root = Diff.util.Category.categorize [c1, c2, c3, c4]
-            assert.deepEqual oad.uniqueVsArray(cat(c1, 0), root.obj[0], false), [[c1, c1]]
-            assert.deepEqual oad.uniqueVsArray(cat(c4, 1), root.obj[0].obj[0], false), [[c4, c2]]
+            assert.deepEqual oad.uniqueVsArray(cat(c1, 0), root.obj[0], options, false), [[c1, c1]]
+            assert.deepEqual oad.uniqueVsArray(cat(c4, 1), root.obj[0].obj[0], options, false), [[c4, c2]]
 
             root = Diff.util.Category.categorize [c1, c2, c3, c4]
-            assert.deepEqual oad.uniqueVsArray(cat(c2, 2), root.obj[0].obj[0].obj[1], false), [[c2, c2]]
+            assert.deepEqual oad.uniqueVsArray(cat(c2, 2), root.obj[0].obj[0].obj[1], options, false), [[c2, c2]]
 
         it 'Should swap pairs if prompted', ->
             c5 = new helper.C 1, 1, 2
             c5.q = 5
             root = cat [c1, c2, c3], 0
-            assert.deepEqual oad.uniqueVsArray(cat(c5, 0), root, false), [[c5, c2]]
+            assert.deepEqual oad.uniqueVsArray(cat(c5, 0), root, options, false), [[c5, c2]]
 
             root = cat [c1, c2, c3], 0
-            assert.deepEqual oad.uniqueVsArray(cat(c5, 0), root, true), [[c2, c5]]
+            assert.deepEqual oad.uniqueVsArray(cat(c5, 0), root, options, true), [[c2, c5]]
 
     describe 'listVsCategory', ->
         it 'Should return an empty list if no matches found', ->
-            assert.deepEqual oad.listVsCategory(cat([c1, c2], 0), cat([], 0), false), []
+            assert.deepEqual oad.listVsCategory(cat([c1, c2], 0), cat([], 0), options, false), []
 
         it 'Should take the best match for each list item if possible', ->
             list = cat [c1, c2, c3]
             root = Diff.util.Category.categorize [c1, c3, c4]
             expected = [[c1, c1], [c2, c4], [c3, c3]]
-            assert.ok comparePairs(oad.listVsCategory(list, root, false), expected)
+            assert.ok comparePairs(oad.listVsCategory(list, root, options, false), expected)
 
             list = cat [c1, c3]
             root = Diff.util.Category.categorize [c3, c4, c2]
             expected = [[c1, c4], [c3, c3]]
-            assert.ok comparePairs(oad.listVsCategory(list, root, false), expected)
+            assert.ok comparePairs(oad.listVsCategory(list, root, options, false), expected)
 
             list = cat [c3, c2, c4, c1]
             root = Diff.util.Category.categorize [c3, c1]
             expected = [[c3, c3], [c2, c1]]
-            assert.ok comparePairs(oad.listVsCategory(list, root, false), expected)
+            assert.ok comparePairs(oad.listVsCategory(list, root, options, false), expected)
 
             helper.C.setKeys ['a', ['b', 'c']]
 
             list = cat [c1, c2, c3]
             root = Diff.util.Category.categorize [c1, c3, c4]
             expected = [[c1, c1], [c2, c4], [c3, c3]]
-            assert.ok comparePairs(oad.listVsCategory(list, root, false), expected)
+            assert.ok comparePairs(oad.listVsCategory(list, root, options, false), expected)
 
             list = cat [c1, c3]
             root = Diff.util.Category.categorize [c3, c4, c2]
             expected = [[c1, c4], [c3, c3]]
-            assert.ok comparePairs(oad.listVsCategory(list, root, false), expected)
+            assert.ok comparePairs(oad.listVsCategory(list, root, options, false), expected)
 
             list = cat [c3, c2, c4, c1]
             root = Diff.util.Category.categorize [c3, c1]
             expected = [[c3, c3], [c2, c1]]
-            assert.ok comparePairs(oad.listVsCategory(list, root, false), expected)
+            assert.ok comparePairs(oad.listVsCategory(list, root, options, false), expected)
 
             helper.C.setKeys ['a', 'b', 'c']
 
         it 'Should remove matched items from the list', ->
             list = cat [c1, c2, c3]
             root = Diff.util.Category.categorize [c1, c3, c4]
-            oad.listVsCategory list, root, false
+            oad.listVsCategory list, root, options, false
             assert.equal list.obj, null
 
             list = cat [c1, c3]
             root = Diff.util.Category.categorize [c3, c4, c2]
-            oad.listVsCategory list, root, false
+            oad.listVsCategory list, root, options, false
             assert.equal list.obj, null
 
             list = cat [c3, c2, c4, c1]
             root = Diff.util.Category.categorize [c3, c1]
-            oad.listVsCategory list, root, false
+            oad.listVsCategory list, root, options, false
             assert.deepEqual list.obj, [c4, c1]
 
             helper.C.setKeys ['a', ['b', 'c']]
 
             list = cat [c1, c2, c3]
             root = Diff.util.Category.categorize [c1, c3, c4]
-            oad.listVsCategory list, root, false
+            oad.listVsCategory list, root, options, false
             assert.equal list.obj, null
 
             list = cat [c1, c3]
             root = Diff.util.Category.categorize [c3, c4, c2]
-            oad.listVsCategory list, root, false
+            oad.listVsCategory list, root, options, false
             assert.equal list.obj, null
 
             list = cat [c3, c2, c4, c1]
             root = Diff.util.Category.categorize [c3, c1]
-            oad.listVsCategory list, root, false
+            oad.listVsCategory list, root, options, false
             assert.deepEqual list.obj, [c4, c1]
 
             helper.C.setKeys ['a', 'b', 'c']
@@ -563,13 +565,13 @@ describe 'ObjectArrayDiff', ->
         it 'Should remove matched items from the category', ->
             list = cat [c1, c2, c3]
             root = Diff.util.Category.categorize [c1, c3, c4]
-            oad.listVsCategory list, root, false
+            oad.listVsCategory list, root, options, false
             expected = new Diff.util.Category '_root', null, null
             assert.ok helper.compareBothWays(root, expected)
 
             list = cat [c1, c3]
             root = Diff.util.Category.categorize [c3, c4, c2]
-            oad.listVsCategory list, root, false
+            oad.listVsCategory list, root, options, false
             expected = new Diff.util.Category '_root', null, []
             expected.add                      new Diff.util.Category 'a', 1, []
             expected.obj[0].add               new Diff.util.Category 'b', 1, []
@@ -579,7 +581,7 @@ describe 'ObjectArrayDiff', ->
 
             list = cat [c3, c2, c4, c1]
             root = Diff.util.Category.categorize [c3, c1]
-            oad.listVsCategory list, root, false
+            oad.listVsCategory list, root, options, false
             expected = new Diff.util.Category '_root', null, null
             assert.ok helper.compareBothWays(root, expected)
 
@@ -587,13 +589,13 @@ describe 'ObjectArrayDiff', ->
 
             list = cat [c1, c2, c3]
             root = Diff.util.Category.categorize [c1, c3, c4]
-            oad.listVsCategory list, root, false
+            oad.listVsCategory list, root, options, false
             expected = new Diff.util.Category '_root', null, null
             assert.ok helper.compareBothWays(root, expected)
 
             list = cat [c1, c3]
             root = Diff.util.Category.categorize [c3, c4, c2]
-            oad.listVsCategory list, root, false
+            oad.listVsCategory list, root, options, false
             expected = new Diff.util.Category '_root', null, []
             expected.add        new Diff.util.Category 'a', 1, []
             expected.obj[0].add new Diff.util.Category ['b', 'c'], [1, 2], c2
@@ -601,7 +603,7 @@ describe 'ObjectArrayDiff', ->
 
             list = cat [c3, c2, c4, c1]
             root = Diff.util.Category.categorize [c3, c1]
-            oad.listVsCategory list, root, false
+            oad.listVsCategory list, root, options, false
             expected = new Diff.util.Category '_root', null, null
             assert.ok helper.compareBothWays(root, expected)
 
@@ -611,68 +613,68 @@ describe 'ObjectArrayDiff', ->
             list = cat [c1, c2, c3], 0
             root = Diff.util.Category.categorize [c1, c3, c4]
             expected = [[c1, c1], [c2, c4]]
-            assert.ok comparePairs(oad.listVsCategory(list, root.obj[0], false), expected)
+            assert.ok comparePairs(oad.listVsCategory(list, root.obj[0], options, false), expected)
 
             list = cat [c1, c2, c3], 1
             root = Diff.util.Category.categorize [c1, c3, c4]
             expected = [[c1, c1], [c2, c4]]
-            assert.ok comparePairs(oad.listVsCategory(list, root.obj[0].obj[0], false), expected)
+            assert.ok comparePairs(oad.listVsCategory(list, root.obj[0].obj[0], options, false), expected)
 
             list = cat [c1, c2, c3], 2
             root = Diff.util.Category.categorize [c1, c3, c4]
             expected = [[c1, c4]]
-            assert.ok comparePairs(oad.listVsCategory(list, root.obj[0].obj[0].obj[1], false), expected)
+            assert.ok comparePairs(oad.listVsCategory(list, root.obj[0].obj[0].obj[1], options, false), expected)
 
         it 'Should swap pairs if prompted', ->
             list = cat [c1, c2, c3]
             root = Diff.util.Category.categorize [c1, c3, c4]
             expected = [[c1, c1], [c2, c4], [c3, c3]]
-            assert.ok comparePairs(oad.listVsCategory(list, root, false), expected)
+            assert.ok comparePairs(oad.listVsCategory(list, root, options, false), expected)
 
             list = cat [c1, c2, c3]
             root = Diff.util.Category.categorize [c1, c3, c4]
             expected = [[c1, c1], [c4, c2], [c3, c3]]
-            assert.ok comparePairs(oad.listVsCategory(list, root, true), expected)
+            assert.ok comparePairs(oad.listVsCategory(list, root, options, true), expected)
 
     describe 'listVsList', ->
         it 'Should return an empty list if no matches found', ->
-            assert.deepEqual oad.listVsList(cat([c1, c2]), cat([])), []
+            assert.deepEqual oad.listVsList(cat([c1, c2]), cat([]), options), []
 
         it 'Should take the first match for each list item', ->
             left = cat [c1, c2, c3]
             right = cat [c1, c3, c4]
             expected = [[c1, c1], [c2, c3], [c3, c4]]
-            assert.ok comparePairs(oad.listVsList(left, right), expected)
+            assert.ok comparePairs(oad.listVsList(left, right, options), expected)
 
             left = cat [c1, c2]
             right = cat [c1, c3, c4]
             expected = [[c1, c1], [c2, c3]]
-            assert.ok comparePairs(oad.listVsList(left, right), expected)
+            assert.ok comparePairs(oad.listVsList(left, right, options), expected)
 
             left = cat [c1, c2, c3, c4]
             right = cat [c1, c3]
             expected = [[c1, c1], [c2, c3]]
-            assert.ok comparePairs(oad.listVsList(left, right), expected)
+            assert.ok comparePairs(oad.listVsList(left, right, options), expected)
 
         it 'Should remove matched items from each list', ->
             left = cat [c1, c2, c3]
             right = cat [c1, c3, c4]
             expected = [[c1, c1], [c2, c3], [c3, c4]]
-            oad.listVsList left, right
+            oad.listVsList left, right, options
             assert.equal left.obj, null
             assert.equal right.obj, null
 
             left = cat [c1, c2]
             right = cat [c1, c3, c4]
             expected = [[c1, c1], [c2, c3]]
-            oad.listVsList left, right
+            oad.listVsList left, right, options
             assert.equal left.obj, null
             assert.equal right.obj, c4
 
             left = cat [c1, c2, c3, c4]
             right = cat [c1, c3]
             expected = [[c1, c1], [c2, c3]]
-            oad.listVsList left, right
+            oad.listVsList left, right, options
             assert.deepEqual left.obj, [c3, c4]
             assert.equal right.obj, null
 
@@ -684,38 +686,38 @@ describe 'ObjectArrayDiff', ->
 
         it 'Should return an empty list if no matches found', ->
             root = Diff.util.Category.categorize [c1, c3, c2]
-            assert.deepEqual oad.catVsCatSecondPass(cat([]), root, true), []
-            assert.deepEqual oad.catVsCatSecondPass(root, cat([]), true), []
+            assert.deepEqual oad.catVsCatSecondPass(cat([]), root, options, true), []
+            assert.deepEqual oad.catVsCatSecondPass(root, cat([]), options, true), []
 
         it 'Should match exactly before inexactly', ->
             left = Diff.util.Category.categorize [c4, c1, c3, c2]
             right = Diff.util.Category.categorize [c1, c3, c2]
             expected = [[c1, c1], [c4, c2], [c3, c3]]
-            assert.ok comparePairs(oad.catVsCatSecondPass(left, right), expected)
+            assert.ok comparePairs(oad.catVsCatSecondPass(left, right, options), expected)
 
             helper.C.setKeys [['a', 'b'], 'c']
 
             left = Diff.util.Category.categorize [c3, c7]
             right = Diff.util.Category.categorize [c1, c5, c4, c8]
             expected = [[c3, c5], [c7, c1]]
-            assert.ok comparePairs(oad.catVsCatSecondPass(left, right), expected)
+            assert.ok comparePairs(oad.catVsCatSecondPass(left, right, options), expected)
 
             left = Diff.util.Category.categorize [c1, c5, c4, c8]
             right = Diff.util.Category.categorize [c3, c7]
             expected = [[c1, c7], [c5, c3]]
-            assert.ok comparePairs(oad.catVsCatSecondPass(left, right), expected)
+            assert.ok comparePairs(oad.catVsCatSecondPass(left, right, options), expected)
 
             left = Diff.util.Category.categorize [c3, c7, c6, c2]
             right = Diff.util.Category.categorize [c1, c2, c5, c4, c8, c6]
             expected = [[c6, c6], [c2, c2], [c7, c1], [c3, c5]]
-            assert.ok comparePairs(oad.catVsCatSecondPass(left, right), expected)
+            assert.ok comparePairs(oad.catVsCatSecondPass(left, right, options), expected)
 
             helper.C.setKeys ['a', 'b', 'c']
 
         it 'Should remove matched items from each category', ->
             left = Diff.util.Category.categorize [c4, c1, c3, c2]
             right = Diff.util.Category.categorize [c1, c3, c2]
-            oad.catVsCatSecondPass left, right
+            oad.catVsCatSecondPass left, right, options
             expected = new Diff.util.Category '_root', null, []
             expected.add                      new Diff.util.Category 'a', 1, []
             expected.obj[0].add               new Diff.util.Category 'b', 1, []
@@ -729,7 +731,7 @@ describe 'ObjectArrayDiff', ->
 
             left = Diff.util.Category.categorize [c3, c7]
             right = Diff.util.Category.categorize [c1, c5, c4, c8]
-            oad.catVsCatSecondPass left, right
+            oad.catVsCatSecondPass left, right, options
             expected = new Diff.util.Category '_root', null, null
             assert.ok helper.compareBothWays(left, expected)
             expected = new Diff.util.Category '_root', null, []
@@ -740,7 +742,7 @@ describe 'ObjectArrayDiff', ->
 
             left = Diff.util.Category.categorize [c1, c5, c4, c8]
             right = Diff.util.Category.categorize [c3, c7]
-            oad.catVsCatSecondPass left, right
+            oad.catVsCatSecondPass left, right, options
             expected = new Diff.util.Category '_root', null, []
             expected.add        new Diff.util.Category ['a', 'b'], [1, 1], []
             expected.obj[0].add new Diff.util.Category 'c', 2, c4
@@ -755,18 +757,19 @@ describe 'ObjectArrayDiff', ->
             left = Diff.util.Category.categorize [c4, c1, c3, c2]
             right = Diff.util.Category.categorize [c1, c3, c2]
             expected = [[c1, c1], [c4, c2]]
-            assert.ok comparePairs(oad.catVsCatSecondPass(left.obj[0], right.obj[0]), expected)
+            assert.ok comparePairs(oad.catVsCatSecondPass(left.obj[0], right.obj[0], options), expected)
 
             left = Diff.util.Category.categorize [c4, c1, c3, c2]
             right = Diff.util.Category.categorize [c1, c3, c2]
             expected = [[c1, c1], [c4, c2]]
-            assert.ok comparePairs(oad.catVsCatSecondPass(left.obj[0].obj[0], right.obj[0].obj[0]), expected)
+            assert.ok comparePairs(oad.catVsCatSecondPass(left.obj[0].obj[0],
+                                                          right.obj[0].obj[0], options), expected)
 
             left = Diff.util.Category.categorize [c4, c1, c3, c2]
             right = Diff.util.Category.categorize [c1, c3, c2]
             expected = [[c4, c2]]
             assert.ok comparePairs(oad.catVsCatSecondPass(left.obj[0].obj[0].obj[0],
-                                                          right.obj[0].obj[0].obj[1]), expected)
+                                                          right.obj[0].obj[0].obj[1], options), expected)
 
     describe 'catVsCat', ->
         c5 = new helper.C 2, 1, 2
@@ -776,59 +779,59 @@ describe 'ObjectArrayDiff', ->
 
         it 'Should return an empty list if no matches found', ->
             root = Diff.util.Category.categorize [c1, c3, c2]
-            assert.deepEqual oad.catVsCat(cat([]), root, true), []
-            assert.deepEqual oad.catVsCat(root, cat([]), true), []
+            assert.deepEqual oad.catVsCat(cat([]), root, options, true), []
+            assert.deepEqual oad.catVsCat(root, cat([]), options, true), []
 
         it 'Should match exactly before matching inexactly', ->
             left = Diff.util.Category.categorize [c1, c3, c2]
             right = Diff.util.Category.categorize [c4, c1, c3, c2]
             expected = [[c1, c1], [c2, c4], [c3, c3]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c4, c1, c3, c2]
             right = Diff.util.Category.categorize [c1, c3, c2]
             expected = [[c1, c1], [c4, c2], [c3, c3]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c3, c4, c4]
             right = Diff.util.Category.categorize [c4, c1, c3, c2]
             expected = [[c4, c4], [c4, c2], [c3, c3]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c4, c1, c3, c2]
             right = Diff.util.Category.categorize [c3, c4, c4]
             expected = [[c4, c4], [c2, c4], [c3, c3]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c4]
             right = Diff.util.Category.categorize [c3, c1]
             expected = [[c4, c1]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c3, c1]
             right = Diff.util.Category.categorize [c4]
             expected = [[c1, c4]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c1, c2, c3, c4, c5, c6, c7, c8]
             right = Diff.util.Category.categorize [c3, c7, c6, c2, c8]
             expected = [[c2, c2], [c3, c3], [c6, c6], [c7, c7], [c8, c8]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c3, c7, c6, c2, c8]
             right = Diff.util.Category.categorize [c1, c2, c3, c4, c5, c6, c7, c8]
             expected = [[c2, c2], [c3, c3], [c6, c6], [c7, c7], [c8, c8]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c3, c7, c6, c2]
             right = Diff.util.Category.categorize [c1, c2, c5, c4, c8, c6]
             expected = [[c2, c2], [c6, c6], [c3, c5]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c1, c2, c5, c4, c8, c6]
             right = Diff.util.Category.categorize [c3, c7, c6, c2]
             expected = [[c2, c2], [c6, c6], [c5, c3]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             helper.C.setKeys [['a', 'b'], 'c']
             helper.uncache c5, c6, c7, c8
@@ -836,62 +839,62 @@ describe 'ObjectArrayDiff', ->
             left = Diff.util.Category.categorize [c1, c3, c2]
             right = Diff.util.Category.categorize [c4, c1, c3, c2]
             expected = [[c1, c1], [c2, c4], [c3, c3]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c4, c1, c3, c2]
             right = Diff.util.Category.categorize [c1, c3, c2]
             expected = [[c1, c1], [c4, c2], [c3, c3]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c3, c4, c4]
             right = Diff.util.Category.categorize [c4, c1, c3, c2]
             expected = [[c4, c4], [c4, c2], [c3, c3]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c4, c1, c3, c2]
             right = Diff.util.Category.categorize [c3, c4, c4]
             expected = [[c4, c4], [c2, c4], [c3, c3]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c4]
             right = Diff.util.Category.categorize [c3, c1]
             expected = [[c4, c1]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c3, c1]
             right = Diff.util.Category.categorize [c4]
             expected = [[c1, c4]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c1, c2, c3, c4, c5, c6, c7, c8]
             right = Diff.util.Category.categorize [c3, c7, c6, c2, c8]
             expected = [[c2, c2], [c3, c3], [c6, c6], [c7, c7], [c8, c8]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c3, c7, c6, c2, c8]
             right = Diff.util.Category.categorize [c1, c2, c3, c4, c5, c6, c7, c8]
             expected = [[c2, c2], [c3, c3], [c6, c6], [c7, c7], [c8, c8]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c3, c7, c6, c2]
             right = Diff.util.Category.categorize [c1, c2, c5, c4, c8, c6]
             expected = [[c6, c6], [c2, c2]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c3, c7, c6, c2]
             right = Diff.util.Category.categorize [c1, c2, c5, c4, c8, c6]
             expected = [[c6, c6], [c2, c2], [c3, c5], [c7, c1]]
-            assert.ok comparePairs(oad.catVsCat(left, right, true), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, true), expected)
 
             left = Diff.util.Category.categorize [c1, c2, c5, c4, c8, c6]
             right = Diff.util.Category.categorize [c3, c7, c6, c2]
             expected = [[c6, c6], [c2, c2]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c1, c2, c5, c4, c8, c6]
             right = Diff.util.Category.categorize [c3, c7, c6, c2]
             expected = [[c6, c6], [c2, c2], [c1, c7], [c5, c3]]
-            assert.ok comparePairs(oad.catVsCat(left, right, true), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, true), expected)
 
             helper.C.setKeys ['a', 'b', 'c']
             helper.uncache c5, c6, c7, c8
@@ -900,22 +903,22 @@ describe 'ObjectArrayDiff', ->
             left = Diff.util.Category.categorize [c1, c3, c2]
             right = Diff.util.Category.categorize [c4, c1, c2]
             expected = [[c1, c1], [c2, c4]]
-            assert.ok comparePairs(oad.catVsCat(left, right, false), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, false), expected)
 
             left = Diff.util.Category.categorize [c1, c3, c2]
             right = Diff.util.Category.categorize [c4, c1, c2]
             expected = [[c1, c1], [c2, c4], [c3, c2]]
-            assert.ok comparePairs(oad.catVsCat(left, right, true), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options, true), expected)
 
             left = Diff.util.Category.categorize [c1, c3, c2]
             right = Diff.util.Category.categorize [c4, c1, c2]
             expected = [[c1, c1], [c2, c4]]
-            assert.ok comparePairs(oad.catVsCat(left, right), expected)
+            assert.ok comparePairs(oad.catVsCat(left, right, options), expected)
 
         it 'Should remove matched items from each category', ->
             left = Diff.util.Category.categorize [c1, c3, c2]
             right = Diff.util.Category.categorize [c4, c1, c3, c2]
-            oad.catVsCat left, right, false
+            oad.catVsCat left, right, options, false
             expected = new Diff.util.Category '_root', null, null
             assert.ok helper.compareBothWays(left, expected)
             expected = new Diff.util.Category '_root', null, []
@@ -926,7 +929,7 @@ describe 'ObjectArrayDiff', ->
 
             left = Diff.util.Category.categorize [c4, c1, c3, c2]
             right = Diff.util.Category.categorize [c1, c3, c2]
-            oad.catVsCat left, right, false
+            oad.catVsCat left, right, options, false
             expected = new Diff.util.Category '_root', null, []
             expected.add        new Diff.util.Category 'a', 1, []
             expected.obj[0].add new Diff.util.Category 'b', 1, []
@@ -939,77 +942,77 @@ describe 'ObjectArrayDiff', ->
             left = Diff.util.Category.categorize [c1, c3, c2]
             right = Diff.util.Category.categorize [c4, c1, c3, c2]
             expected = [[c1, c1], [c2, c4]]
-            assert.ok comparePairs(oad.catVsCat(left.obj[0], right.obj[0], true), expected)
+            assert.ok comparePairs(oad.catVsCat(left.obj[0], right.obj[0], options, true), expected)
 
             left = Diff.util.Category.categorize [c1, c3, c2]
             right = Diff.util.Category.categorize [c4, c1, c3, c2]
             expected = [[c1, c1], [c2, c4]]
-            assert.ok comparePairs(oad.catVsCat(left.obj[0].obj[0], right.obj[0].obj[0], true), expected)
+            assert.ok comparePairs(oad.catVsCat(left.obj[0].obj[0], right.obj[0].obj[0], options, true), expected)
 
     describe 'getPairs', ->
         it 'Should return an empty list if no matches found', ->
             left = cat []
             right = cat c1
-            assert.deepEqual oad.getPairs(left, right), []
+            assert.deepEqual oad.getPairs(left, right, options), []
 
         it 'Should support unique vs unique', ->
             left = cat c1
             right = cat c2
-            assert.deepEqual oad.getPairs(left, right), [[c1, c2]]
+            assert.deepEqual oad.getPairs(left, right, options), [[c1, c2]]
 
         it 'Should support unique vs list', ->
             left = cat c1
             right = cat [c1, c2]
-            assert.deepEqual oad.getPairs(left, right), [[c1, c1]]
+            assert.deepEqual oad.getPairs(left, right, options), [[c1, c1]]
 
         it 'Should support unique vs categories', ->
             left = cat c1
             right = Diff.util.Category.categorize [c3, c2]
-            assert.deepEqual oad.getPairs(left, right), [[c1, c2]]
+            assert.deepEqual oad.getPairs(left, right, options), [[c1, c2]]
 
         it 'Should support list vs unique', ->
             left = cat [c1, c2]
             right = cat c1
-            assert.deepEqual oad.getPairs(left, right), [[c1, c1]]
+            assert.deepEqual oad.getPairs(left, right, options), [[c1, c1]]
 
         it 'Should support list vs list', ->
             left = cat [c3, c1]
             right = cat [c1, c2]
-            assert.deepEqual oad.getPairs(left, right), [[c3, c1], [c1, c2]]
+            assert.deepEqual oad.getPairs(left, right, options), [[c3, c1], [c1, c2]]
 
         it 'Should support list vs categories', ->
             left = cat [c1, c3]
             right = Diff.util.Category.categorize [c3, c2]
-            assert.deepEqual oad.getPairs(left, right), [[c1, c2], [c3, c3]]
+            assert.deepEqual oad.getPairs(left, right, options), [[c1, c2], [c3, c3]]
 
         it 'Should support categories vs unique', ->
             left = Diff.util.Category.categorize [c3, c2]
             right = cat c1
-            assert.deepEqual oad.getPairs(left, right), [[c2, c1]]
+            assert.deepEqual oad.getPairs(left, right, options), [[c2, c1]]
 
         it 'Should support categories vs list', ->
             left = Diff.util.Category.categorize [c3, c2]
             right = cat [c1, c3]
-            assert.deepEqual oad.getPairs(left, right), [[c2, c1], [c3, c3]]
+            assert.deepEqual oad.getPairs(left, right, options), [[c2, c1], [c3, c3]]
 
         it 'Should support categories vs categories', ->
             left = Diff.util.Category.categorize [c3, c2]
             right = Diff.util.Category.categorize [c1, c2]
-            assert.deepEqual oad.getPairs(left, right), [[c2, c2]]
+            assert.deepEqual oad.getPairs(left, right, options), [[c2, c2]]
 
         it 'Should support all key levels', ->
             left = Diff.util.Category.categorize [c3, c2, c1, c4]
             right = Diff.util.Category.categorize [c1, c2]
-            assert.deepEqual oad.getPairs(left.obj[1], right.obj[0]), [[c2, c2], [c1, c1]]
+            assert.deepEqual oad.getPairs(left.obj[1], right.obj[0], options), [[c2, c2], [c1, c1]]
 
             left = Diff.util.Category.categorize [c3, c2, c1, c4]
             right = Diff.util.Category.categorize [c1, c2]
-            assert.deepEqual oad.getPairs(left.obj[1].obj[0], right.obj[0].obj[0]), [[c2, c2], [c1, c1]]
+            assert.deepEqual oad.getPairs(left.obj[1].obj[0], right.obj[0].obj[0], options), [[c2, c2], [c1, c1]]
 
             left = Diff.util.Category.categorize [c3, c2, c1, c4]
             right = Diff.util.Category.categorize [c1, c2]
             assert.deepEqual oad.getPairs(left.obj[1].obj[0].obj[0],
-                                          right.obj[0].obj[0].obj[1]), [[c2, c2]]
+                                          right.obj[0].obj[0].obj[1], options), [[c2, c2]]
 
     describe 'fromObject', ->
         it 'Should convert a regular object into an ObjectArrayDiff', ->
@@ -1183,7 +1186,7 @@ describe 'ObjectArrayDiff', ->
 
         assert.deepEqual diff, expected
 
-describe 'FuzzyMatch', ->
+describe 'FuzzyMatcher', ->
     class Fuzz
         _diffKeys: ['name']
         constructor: (@name) ->
@@ -1203,9 +1206,11 @@ describe 'FuzzyMatch', ->
     left = Diff.util.Category.categorize [f1, f3, f4, f6]
     right = Diff.util.Category.categorize [f9, f2, f5, f7, f8]
 
+    options = Diff.util.ConvertToOptions {}
+
     describe 'topDown', ->
         it 'Should find the highest value in a column', ->
-            f = new oad.FuzzyMatcher left, right
+            f = new oad.FuzzyMatcher left, right, options
             assert.deepEqual f.topDown(0, 1), [0, 1]
             assert.deepEqual f.topDown(1, 2), [1, 2]
 
@@ -1213,7 +1218,7 @@ describe 'FuzzyMatch', ->
 
     describe 'leftRight', ->
         it 'Should find the highest value in a row', ->
-            f = new oad.FuzzyMatcher left, right
+            f = new oad.FuzzyMatcher left, right, options
             assert.deepEqual f.leftRight(0, 1), [0, 1]
             assert.deepEqual f.leftRight(1, 2), [1, 2]
             assert.deepEqual f.leftRight(3, 3), [3, 3]
@@ -1222,7 +1227,7 @@ describe 'FuzzyMatch', ->
 
     describe 'clearLeft', ->
         it 'Should remove a left value from being selected', ->
-            f = new oad.FuzzyMatcher left, right
+            f = new oad.FuzzyMatcher left, right, options
             assert.deepEqual f.next(), [0, 1]
             assert.deepEqual f.next(), [0, 1]
             f.clearLeft 0
@@ -1234,7 +1239,7 @@ describe 'FuzzyMatch', ->
         it 'Should remove a right value from being selected', ->
             l = Diff.util.Category.categorize [f1, f3, f4, f6]
             r = Diff.util.Category.categorize [f1, f2, f5, f7, f8]
-            f = new oad.FuzzyMatcher l, r
+            f = new oad.FuzzyMatcher l, r, options
             assert.deepEqual f.next(), [0, 0]
             assert.deepEqual f.next(), [0, 0]
             f.clearRight 0
@@ -1244,12 +1249,12 @@ describe 'FuzzyMatch', ->
 
     describe 'next', ->
         it 'Should return a high-scored match', ->
-            f = new oad.FuzzyMatcher left, right
+            f = new oad.FuzzyMatcher left, right, options
             assert.deepEqual f.next(), [0, 1]
 
             l = Diff.util.Category.categorize [f1, f2, f4, f6, f7, f10, f11]
             r = Diff.util.Category.categorize [f2, f8, f11]
-            f = new oad.FuzzyMatcher l, r
+            f = new oad.FuzzyMatcher l, r, options
             assert.deepEqual f.next(), [1, 0]
             f.clearLeft 1
             f.clearRight 0
@@ -1257,7 +1262,7 @@ describe 'FuzzyMatch', ->
 
             l = Diff.util.Category.categorize [f1, f3, f4, f6]
             r = Diff.util.Category.categorize [f2, f5, f7, f8]
-            f = new oad.FuzzyMatcher l, r
+            f = new oad.FuzzyMatcher l, r, options
             f.clearLeft 0
             f.clearRight 0
             assert.deepEqual f.next(), [1, 1]

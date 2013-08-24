@@ -39,7 +39,8 @@
   },
   "license": "MIT",
   "dependencies": {
-    "imurmurhash": ">=0.0.1 <1"
+    "imurmurhash": ">=0.0.1 <1",
+    "fast-levenshtein": ">=1.0.0 <2"
   },
   "peerDependencies": {
     "brauhaus": ">=0.5.4 <1"

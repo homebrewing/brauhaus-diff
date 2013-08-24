@@ -152,25 +152,28 @@ diffutil =
 
     # Get a "closeness" score for a set of keys and values. The higher the
     # score, the better
-    getKeyValScore: (leftKey, leftVal, rightKey, rightVal, dontScoreKeys) ->
+    getKeyValScore: (leftKey, leftVal, rightKey, rightVal, options) ->
         score = 0
         if diffutil.areAll Array, leftKey, rightKey
             for i in [0...leftKey.length]
-                score += diffutil.getKeyValScore leftKey[i], leftVal[i], rightKey[i], rightVal[i], dontScoreKeys
+                score += diffutil.getKeyValScore leftKey[i], leftVal[i],
+                                                 rightKey[i], rightVal[i],
+                                                 options, options.dontScoreKeys
         else if leftKey is rightKey
-            score = 1 if not dontScoreKeys
+            score = 1 if not options.dontScoreKeys
             if leftVal is rightVal
                 ++score
-            else if Options.fuzzyStrings and typeof leftVal is 'string' and typeof rightVal is 'string'
+            else if options.fuzzyStrings and typeof leftVal is 'string' and typeof rightVal is 'string'
                 # Multiply match percentage by 0.95 to ensure a perfect match's
                 # score always beats a fuzzy match's score
                 #  e.g. 2 vs (1 + 0.95 * fuzzyMatch)
-                score += 0.95 * diffutil.fuzzyMatch leftVal, rightVal
+                score += 0.95 * diffutil.fuzzyMatch leftVal, rightVal, options
         score
 
     # Get an array of "closeness" scores for two objects.
-    getMatchScore: (left, right, start_level) ->
+    getMatchScore: (left, right, options) ->
         scores = []
+        start_level = options.start_level
         loop
             [leftKey, leftVal] = diffutil.getKeyVal left, start_level
             [rightKey, rightVal] = diffutil.getKeyVal right, start_level
@@ -179,7 +182,7 @@ diffutil =
             rightValid = rightKey isnt '_nokey'
 
             if leftValid and rightValid
-                scores.push diffutil.getKeyValScore(leftKey, leftVal, rightKey, rightVal)
+                scores.push diffutil.getKeyValScore(leftKey, leftVal, rightKey, rightVal, options)
             else if not leftValid and not rightValid
                 break
             else
@@ -192,20 +195,47 @@ diffutil =
 
     # Get the closeness of two strings as a percentage if the strings pass the
     # fuzzyStrings filter.
-    fuzzyMatch: (left, right) ->
-        cutoff = Options.fuzzyStrings left, right
+    fuzzyMatch: (left, right, options) ->
+        # Check the cache before doing fuzzy matching
+        if left.length < right.length
+            shorter = left
+            longer = right
+        else
+            shorter = right
+            longer = left
+
+        if options._fuzzyMatchCache?
+            return options._fuzzyMatchCache[shorter][longer] if options._fuzzyMatchCache[shorter]?[longer]?
+        else
+            options._fuzzyMatchCache = {}
+            options._fuzzySortCache = {}
+
+        options._fuzzyMatchCache[shorter] ?= {}
+
+        cutoff = options.fuzzyStrings left, right
         len = Math.max left.length, right.length
         lev = levenshtein.get(left, right) / len
         if lev <= cutoff
-            1 - lev
+            options._fuzzyMatchCache[shorter][longer] = 1 - lev
         else if left.indexOf(' ') >= 0 and right.indexOf(' ') >= 0
             # Split the strings, sort, stringify, and then compare again
-            left = left.split(' ').filter((s) -> s != '').sort().join(' ')
-            right = right.split(' ').filter((s) -> s != '').sort().join(' ')
+            left = if options._fuzzySortCache[left]?
+                options._fuzzySortCache[left]
+            else
+                options._fuzzySortCache[left] = left.split(' ').filter((s) -> s != '').sort().join(' ')
+
+            right = if options._fuzzySortCache[right]?
+                options._fuzzySortCache[right]
+            else
+                options._fuzzySortCache[right] = right.split(' ').filter((s) -> s != '').sort().join(' ')
+
             lev = levenshtein.get(left, right) / len
-            if lev <= cutoff then 1 - lev else 0
+            if lev <= cutoff
+                options._fuzzyMatchCache[shorter][longer] = 1 - lev
+            else
+                options._fuzzyMatchCache[shorter][longer] = 0
         else
-            0
+            options._fuzzyMatchCache[shorter][longer] = 0
 
     # Return the first value we can get from a category or the object itself
     getOne: (val) ->
@@ -299,9 +329,30 @@ class ConvertToOptions
         else if this instanceof ConvertToOptions
             if options?
                 @[key] = val for own key, val of options
+            ConvertToOptions.normalize this
         # We were called without `new` but need to create a new instance
         else
             return new ConvertToOptions options
+
+    # Normalize the options to be the right types.
+    @normalize = (options) ->
+        # Coerce to booleans
+        options.exportUtil = !!options.exportUtil if options.hasOwnProperty 'exportUtil'
+        options.usingBrauhausStyles = !!options.usingBrauhausStyles if options.hasOwnProperty 'usingBrauhausStyles'
+        options.removeDefaultValues = !!options.removeDefaultValues if options.hasOwnProperty 'removeDefaultValues'
+        options.enablePostDiff = !!options.enablePostDiff if options.hasOwnProperty 'enablePostDiff'
+        options.enablePostApply = !!options.enablePostApply if options.hasOwnProperty 'enablePostApply'
+
+        # Determine how to handle fuzzy strings based on type
+        if options.hasOwnProperty 'fuzzyStrings'
+            if options.fuzzyStrings is true
+                options.fuzzyStrings = defaultFuzzyStrings
+            else if typeof options.fuzzyStrings is 'number'
+                options.fuzzyStrings = -> options.fuzzyStrings
+            else if typeof options.fuzzyStrings is 'function'
+                options.fuzzyStrings = options.fuzzyStrings
+            else
+                options.fuzzyStrings = false
 
 # Set up the prototype so the default options are used for any unset options
 ConvertToOptions.prototype = Options

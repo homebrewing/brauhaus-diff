@@ -375,39 +375,42 @@ describe 'Util', ->
             assert.ok not Diff.util.arrayCompare(arr2, arr1)
 
     describe 'getKeyValScore', ->
+        options = Diff.util.ConvertToOptions {}
+
         it 'Should return 2 for simple key/pair match', ->
-            assert.equal Diff.util.getKeyValScore('key', 1, 'key', 1), 2
-            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'test'), 2
+            assert.equal Diff.util.getKeyValScore('key', 1, 'key', 1, options), 2
+            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'test', options), 2
 
         it 'Should return 1 for key-only match', ->
-            assert.equal Diff.util.getKeyValScore('key', 1, 'key', 2), 1
-            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'blah'), 1
+            assert.equal Diff.util.getKeyValScore('key', 1, 'key', 2, options), 1
+            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'blah', options), 1
 
         it 'Should return between 1 and 2 for fuzzy matches', ->
-            score = Diff.util.getKeyValScore 'key', 'test', 'key', 'testa'
+            score = Diff.util.getKeyValScore 'key', 'test', 'key', 'testa', options
             assert.ok 1 < score < 2
-            score = Diff.util.getKeyValScore 'key', 'test string', 'key', 'string test'
+            score = Diff.util.getKeyValScore 'key', 'test string', 'key', 'string test', options
             assert.ok 1 < score < 2
-            assert.ok Diff.util.getKeyValScore('key', 'test string', 'key', 'string test') <
-                      Diff.util.getKeyValScore('key', 'test string', 'key', 'test string')
+            assert.ok Diff.util.getKeyValScore('key', 'test string', 'key', 'string test', options) <
+                      Diff.util.getKeyValScore('key', 'test string', 'key', 'test string', options)
 
         it 'Should handle complex key/pair matches', ->
-            assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'b'], [1, 2]), 4
-            assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'b'], [1, 1]), 3
-            assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['c', 'b'], [1, 2]), 2
-            assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'c'], [2, 2]), 1
+            assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'b'], [1, 2], options), 4
+            assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'b'], [1, 1], options), 3
+            assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['c', 'b'], [1, 2], options), 2
+            assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'c'], [2, 2], options), 1
 
         it 'Should optionally ignore key scoring', ->
-            assert.equal Diff.util.getKeyValScore('key', 1, 'key', 1, true), 1
-            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'test', true), 1
+            options.dontScoreKeys = true
+            assert.equal Diff.util.getKeyValScore('key', 1, 'key', 1, options), 1
+            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'test', options), 1
 
-            assert.equal Diff.util.getKeyValScore('key', 1, 'key', 2, true), 0
-            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'blah', true), 0
+            assert.equal Diff.util.getKeyValScore('key', 1, 'key', 2, options), 0
+            assert.equal Diff.util.getKeyValScore('key', 'test', 'key', 'blah', options), 0
 
-            score = Diff.util.getKeyValScore 'key', 'test', 'key', 'testa', true
+            score = Diff.util.getKeyValScore 'key', 'test', 'key', 'testa', options
             assert.ok 0 < score < 1
 
-            assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'b'], [1, 2], true), 2
+            assert.equal Diff.util.getKeyValScore(['a', 'b'], [1, 2], ['a', 'b'], [1, 2], options), 2
 
     describe 'getOne', ->
         it 'Should return the first available object', ->
@@ -419,23 +422,27 @@ describe 'Util', ->
             assert.equal Diff.util.getOne(c4), c4
 
     describe 'getMatchScore', ->
+        options = Diff.util.ConvertToOptions {start_level: 0}
+
         it 'Should return an array', ->
-            assert.ok Diff.util.getMatchScore(c1, c2, 0) instanceof Array
+            assert.ok Diff.util.getMatchScore(c1, c2, options) instanceof Array
 
         it 'Should work on objects with keys', ->
-            assert.deepEqual Diff.util.getMatchScore(c1, c2, 0), [2, 2, 1]
+            assert.deepEqual Diff.util.getMatchScore(c1, c2, options), [2, 2, 1]
 
         it 'Should work on objects missing keys', ->
-            assert.deepEqual Diff.util.getMatchScore(c1, {}, 0), [0, 0, 0]
-            assert.deepEqual Diff.util.getMatchScore({}, {}, 0), [0]
+            assert.deepEqual Diff.util.getMatchScore(c1, {}, options), [0, 0, 0]
+            assert.deepEqual Diff.util.getMatchScore({}, {}, options), [0]
 
         it 'Should work on objects with mixed keys', ->
             a = {a: 1, x: 1, c: 3, _diffKeys: ['a', 'x', 'c']}
-            assert.deepEqual Diff.util.getMatchScore(c1, a, 0), [2, 0, 1]
+            assert.deepEqual Diff.util.getMatchScore(c1, a, options), [2, 0, 1]
 
         it 'Should work on all key levels', ->
-            assert.deepEqual Diff.util.getMatchScore(c1, c2, 1), [2, 1]
-            assert.deepEqual Diff.util.getMatchScore(c1, c2, 2), [1]
+            options.start_level = 1
+            assert.deepEqual Diff.util.getMatchScore(c1, c2, options), [2, 1]
+            options.start_level = 2
+            assert.deepEqual Diff.util.getMatchScore(c1, c2, options), [1]
 
     describe 'getDirection', ->
         it 'Should default to left-to-right', ->

@@ -294,11 +294,11 @@ class ObjectArrayDiff
         rightCat = Category.categorize right
 
         # Look through for unique matches
-        pairs = oad.getPairs leftCat, rightCat
+        pairs = oad.getPairs leftCat, rightCat, options
 
         # Add fuzzy matches (if any)
         if leftCat.obj? and rightCat.obj?
-            pairs = pairs.concat(oad.fuzzyMatch leftCat, rightCat)
+            pairs = pairs.concat(oad.fuzzyMatch leftCat, rightCat, options)
 
         # Second pass, find additions / deletions
         if leftCat.obj?
@@ -335,7 +335,7 @@ class ObjectArrayDiff
         postDiff left, right, this, options
 
     # Get a set of pairs from left and right.
-    @getPairs = (left, right) ->
+    @getPairs = (left, right, options) ->
         # There are 9 possible combinations of left and right based on the
         # three possible types of values for Category trees.
         # The value types are:
@@ -359,33 +359,33 @@ class ObjectArrayDiff
         if lType is Category.Type.Unique
             # Combo 1
             if rType is Category.Type.Unique
-                oad.uniqueVsUnique left, right
+                oad.uniqueVsUnique left, right, options
 
             # Combos 2 and 3
             else
-                oad.uniqueVsArray left, right, false
+                oad.uniqueVsArray left, right, options, false
 
         # Combos 4 and 7
         else if rType is Category.Type.Unique
-            oad.uniqueVsArray right, left, true
+            oad.uniqueVsArray right, left, options, true
 
         # Combos 8 and 9
         else if lType is Category.Type.Category
             # Combo 9
             if rType is Category.Type.Category
-                oad.catVsCat left, right
+                oad.catVsCat left, right, options
 
             # Combo 8
             else
-                oad.listVsCategory right, left, true
+                oad.listVsCategory right, left, options, true
 
         # Combo 6
         else if rType is Category.Type.Category
-            oad.listVsCategory left, right, false
+            oad.listVsCategory left, right, options, false
 
         # Combo 5
         else
-            oad.listVsList left, right
+            oad.listVsList left, right, options
 
     # Both left and right categories contain a unique value, this is a simple,
     # direct match.
@@ -400,8 +400,8 @@ class ObjectArrayDiff
     # the array is empty and an empty list is returned.
     # If swap is true, the returned pair is [match, unique], otherwise it is
     # [unique, match].
-    @uniqueVsArray = (unique, arr, swap) ->
-        match = oad.takeBestMatch unique.obj, arr
+    @uniqueVsArray = (unique, arr, options, swap) ->
+        match = oad.takeBestMatch unique.obj, arr, options
         if match?
             ret = if swap then [[match, unique.obj]] else [[unique.obj, match]]
             unique.cleanUp 0, 1
@@ -413,11 +413,11 @@ class ObjectArrayDiff
     # can be created, an empty list is returned.
     # If swap is true, the returned pairs are [match, listobject], otherwise
     # they are [listobject, match].
-    @listVsCategory = (list, cat, swap) ->
+    @listVsCategory = (list, cat, options, swap) ->
         pairs = []
         count = 0
         for listObj in list.obj
-            match = oad.takeBestMatch listObj, cat
+            match = oad.takeBestMatch listObj, cat, options
             if match?
                 pairs.push if swap then [match, listObj] else [listObj, match]
                 ++count
@@ -444,7 +444,7 @@ class ObjectArrayDiff
     # pass looking for matches across the top-level categories (left and
     # right). The secondPass parameter should ideally be set to false for root
     # nodes (level = -1), and true for any other node (level >= 0).
-    @catVsCat = (left, right, secondPass) ->
+    @catVsCat = (left, right, options, secondPass) ->
         # Default parameters
         secondPass ?= left.level >= 0
 
@@ -457,7 +457,7 @@ class ObjectArrayDiff
             for rightCat, j in right.obj
                 # Look for a matching left and right category
                 if diffutil.checkKeyVal leftCat.key, leftCat.val, rightCat.key, rightCat.val
-                    pairs = pairs.concat(oad.getPairs leftCat, rightCat)
+                    pairs = pairs.concat(oad.getPairs leftCat, rightCat, options)
 
                     # Clean up right's category list
                     if rightCat.obj is null
@@ -479,7 +479,7 @@ class ObjectArrayDiff
         right.cleanUp 0, 0
 
         if secondPass and left.obj? and right.obj?
-            pairs = pairs.concat(oad.catVsCatSecondPass left, right)
+            pairs = pairs.concat(oad.catVsCatSecondPass left, right, options)
 
         pairs
 
@@ -491,12 +491,12 @@ class ObjectArrayDiff
     # This function can also work as a general replacement for catVsCat (and
     # all the other functions), but is about 35% slower in the test cases I
     # tried.
-    @catVsCatSecondPass = (left, right) ->
+    @catVsCatSecondPass = (left, right, options) ->
         # Check that the best match for match is obj. If not, take the match
         # and try to find its best match, then do the same. Keep going until
         # a pair of matches points at each other.
         getMatchPair = (obj, match, onLeft) ->
-            other = oad.bestMatch match, (if onLeft then left.obj else right.obj), left.level + 1
+            other = oad.bestMatch match, (if onLeft then left.obj else right.obj), options, left.level + 1
             if obj is other
                 if onLeft then [obj, match] else [match, obj]
             else
@@ -525,7 +525,7 @@ class ObjectArrayDiff
                 right.cleanUp 0, 1
                 break
 
-            match = oad.bestMatch obj, right.obj, left.level + 1
+            match = oad.bestMatch obj, right.obj, options, left.level + 1
             if not match?
                 break
 
@@ -543,13 +543,13 @@ class ObjectArrayDiff
     # Find the best match for the given object in the given array. Level must
     # be the level of the array passed in (e.g. if passing the root nodes'
     # object, level will be 0, not -1).
-    @bestMatch = (obj, arr, level) ->
+    @bestMatch = (obj, arr, options, level) ->
         matches = []
         bestScore = 0
         [objKey, objVal] = diffutil.getKeyVal obj, level
 
         updateScore = (k, v, o) ->
-            score = diffutil.getKeyValScore objKey, objVal, k, v
+            score = diffutil.getKeyValScore objKey, objVal, k, v, options
             if score > bestScore
                 matches = if o instanceof Array then [].concat(o) else [o]
                 bestScore = score
@@ -575,24 +575,24 @@ class ObjectArrayDiff
             if matches.length is 1 and matches[0] not instanceof Category
                 matches[0]
             else
-                oad.bestMatch obj, matches, level + 1
+                oad.bestMatch obj, matches, options, level + 1
 
     # Find the best match for an object in a category and remove that match
     # from the category.
-    @takeBestMatch = (obj, cat) ->
+    @takeBestMatch = (obj, cat, options) ->
         arr = if cat.obj instanceof Array then cat.obj else [cat.obj]
-        match = oad.bestMatch obj, arr, cat.level + 1
+        match = oad.bestMatch obj, arr, options, cat.level + 1
         cat.remove(match) if match?
         match
 
     # Search for fuzzy matches between the left and right category trees.
-    @fuzzyMatch = (leftCat, rightCat) ->
+    @fuzzyMatch = (leftCat, rightCat, options) ->
         # Loop through fuzzy matches looking for pairs
-        matcher = new oad.FuzzyMatcher leftCat, rightCat
+        matcher = new oad.FuzzyMatcher leftCat, rightCat, options
         pairs = []
         while (match = matcher.next())?
             [l, r] = match
-            pairs = pairs.concat(oad.getPairs leftCat.obj[l], rightCat.obj[r])
+            pairs = pairs.concat(oad.getPairs leftCat.obj[l], rightCat.obj[r], options)
             # We took everything in left, clear it
             if not leftCat.obj[l].obj?
                 matcher.clearLeft l
@@ -709,10 +709,11 @@ returned. If not, a row search is done on the new high score and the process
 repeats.
 ###
 class ObjectArrayDiff.FuzzyMatcher
-    constructor: (leftCat, rightCat) ->
+    constructor: (leftCat, rightCat, options) ->
         # Create a score matrix that will be used to find the best matches
         @l = 0
         @scores = []
+        options.dontScoreKeys = true
         for leftSubCat in leftCat.obj
             tmpScores = []
             for rightSubCat in rightCat.obj
@@ -720,8 +721,9 @@ class ObjectArrayDiff.FuzzyMatcher
                                                        leftSubCat.val,
                                                        rightSubCat.key,
                                                        rightSubCat.val,
-                                                       true)
+                                                       options)
             @scores.push tmpScores
+        delete options.dontScoreKeys
 
     # Get the best match, or undefined if no more matches are left. The return
     # value is an array of left and right indexes, [l, r], that indicates a
