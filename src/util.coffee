@@ -348,11 +348,13 @@ class ConvertToOptions
             if options.fuzzyStrings is true
                 options.fuzzyStrings = defaultFuzzyStrings
             else if typeof options.fuzzyStrings is 'number'
-                options.fuzzyStrings = -> options.fuzzyStrings
+                f = (n) -> return -> n
+                options.fuzzyStrings = f options.fuzzyStrings
             else if typeof options.fuzzyStrings is 'function'
                 options.fuzzyStrings = options.fuzzyStrings
             else
                 options.fuzzyStrings = false
+        options
 
 # Set up the prototype so the default options are used for any unset options
 ConvertToOptions.prototype = Options

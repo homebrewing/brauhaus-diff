@@ -609,3 +609,54 @@ describe 'ConvertToOptions', ->
         assert.equal opt.x, 1
         assert.equal opt.y, 2
         assert.ok not opt.test?
+
+    describe 'normalize', ->
+        it 'Should coerce boolean options to boolean', ->
+            options = Diff.util.ConvertToOptions.normalize
+                exportUtil: true
+                usingBrauhausStyles: 1
+                removeDefaultValues: 0
+                enablePostDiff: 'test'
+                enablePostApply: undefined
+
+            assert.equal options.exportUtil, true
+            assert.equal options.usingBrauhausStyles, true
+            assert.equal options.removeDefaultValues, false
+            assert.equal options.enablePostDiff, true
+            assert.equal options.enablePostApply, false
+
+        it 'Should not modify unknown options', ->
+            options = Diff.util.ConvertToOptions.normalize
+                unknown1: 12
+                unknown2: 'test'
+
+            assert.equal options.unknown1, 12
+            assert.equal options.unknown2, 'test'
+
+        it 'Should handle the fuzzyStrings option types', ->
+            options = Diff.util.ConvertToOptions.normalize fuzzyStrings: true
+            assert.ok typeof options.fuzzyStrings is 'function'
+
+            options = Diff.util.ConvertToOptions.normalize fuzzyStrings: false
+            assert.ok typeof options.fuzzyStrings isnt 'function'
+
+            options = Diff.util.ConvertToOptions.normalize fuzzyStrings: -> 0.4
+            assert.ok typeof options.fuzzyStrings is 'function'
+            assert.equal options.fuzzyStrings(), 0.4
+
+            options = Diff.util.ConvertToOptions.normalize fuzzyStrings: 0.5
+            assert.ok typeof options.fuzzyStrings is 'function'
+            assert.equal options.fuzzyStrings(), 0.5
+
+            options = Diff.util.ConvertToOptions.normalize fuzzyStrings: 'test'
+            assert.ok typeof options.fuzzyStrings isnt 'function'
+
+
+describe 'defaultFuzzyStrings', ->
+    it 'Should return a number in the range [0, 1]', ->
+        defaultFuzzyStrings = Diff.util.ConvertToOptions(fuzzyStrings: true).fuzzyStrings
+        assert.ok 0 <= defaultFuzzyStrings('test', 'blah') <= 1
+        assert.ok 0 <= defaultFuzzyStrings('test', 'test') <= 1
+        assert.ok 0 <= defaultFuzzyStrings('te', 'blah this is a long string') <= 1
+        assert.ok 0 <= defaultFuzzyStrings('test', 't') <= 1
+        assert.ok 0 <= defaultFuzzyStrings('t', 'b') <= 1

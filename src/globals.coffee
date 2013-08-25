@@ -93,7 +93,7 @@ Diff.configure = (options) ->
     #    Options._fuzzySortCache = {}
 
     # Copy the options into the global object
-    Options[key] = val for own key, val of options
+    Options[key] = options[key] for key in Object.keys(options)
     ConvertToOptions.normalize Options
 
     if Options.exportUtil and not Diff.util?
