@@ -2,7 +2,13 @@ Brauhaus.js Diff Plugin
 ==========================
 [![Dependency Status](https://gemnasium.com/homebrewing/brauhaus-diff.png)](https://gemnasium.com/homebrewing/brauhaus-diff) [![Build Status](https://travis-ci.org/homebrewing/brauhaus-diff.png?branch=master)](https://travis-ci.org/homebrewing/brauhaus-diff) [![Coverage Status](https://coveralls.io/repos/homebrewing/brauhaus-diff/badge.png?branch=master)](https://coveralls.io/r/homebrewing/brauhaus-diff?branch=master) [![NPM version](https://badge.fury.io/js/brauhaus-diff.png)](http://badge.fury.io/js/brauhaus-diff)
 
-A plugin for [Brauhaus.js](https://github.com/homebrewing/brauhausjs) that adds diff functionality.
+A plugin for [Brauhaus.js](https://github.com/homebrewing/brauhausjs) that adds diff functionality. Features include:
+
+* Smart diffing for all Brauhaus types
+* Configurable fuzzy string matching
+* Compact JSON diff representation
+* Apply diffs either forward or backward, single or multiple at a time
+* Support for custom types
 
 Installation
 ------------
@@ -203,11 +209,17 @@ diff = Diff.parse(obj);
 Diff Configuration
 ------------------
 
-Several global options are available for configuring how Brauhaus-Diff works. These options can be passed into `Brauhaus.Diff.configure()` as an object, e.g.
+Several options are available for configuring how Brauhaus-Diff works. These options can be passed into `Brauhaus.Diff.configure()` as an object to configure global defaults or on a per-call basis to the other supported functions, e.g.
 
 ```javascript
+// Global configuration, all subsequent diff calls will use this option
 Brauhaus.Diff.configure({
     usingBrauhausStyles: true
+});
+
+// Per-call options, any options not configured will use the global default
+Brauhaus.Diff.diff(left, right, {
+    removeDefaultValues: true
 });
 ```
 
@@ -218,6 +230,9 @@ Brauhaus.Diff.configure({
 | removeDefaultValues | boolean | false   | Some Brauhaus objects use defaults supplied by their prototypes. If set to true, the diff will check whether values are different from default when adding or removing one of these objects. This option is disabled by default because it may remove useful information from the diff if you aren't sure what the prototype chain will be when you apply the changes to another object. If you only plan on diffing recipes, this option can be safely enabled to save some space in the diffs.
 | enablePostDiff      | boolean | true    | Diff checks every diffed object for a postDiff function to be called after a diff. For a single call to `Brauhaus.Diff.diff`, many postDiff calls can be made for every sub-object (and sub-sub-object, etc), which makes diffing slower. If you don't need this functionality, you can disable it for some speed gains. Within Brauhaus, this is only used to implement the _usingBrauhausStyles_ option. If you don't use this option, you can disable postDiff.
 | enablePostApply     | boolean | true    | Diff checks every object for a postApply function to be called after applying a diff. For a single call to `Brauhaus.Diff.apply`, many postApply calls can be made for every sub-object (and sub-sub-object, etc), which makes applying slower. If you don't need this functionality, you can disable it for some speed gains. Within Brauhaus, this is only used to implement the _usingBrauhausStyles_ option. If you don't use this option, you can disable postApply.
+| fuzzyStrings        | mixed   | true    | When comparing strings, this option is consulted for how different they may be to be considered a match. If set to `true`, the default function will be used. If set to a number in the range [0, 1], that will be used as the cutoff. If set to a function, the function will be called with two strings and the return value will be used as the cutoff. Setting to false will disable fuzzy string matching. More details and examples below.
+
+---
 
 An example of the difference from _removeDefaultValues_:
 
@@ -250,6 +265,36 @@ Brauhaus.Diff.diff(fermentable, null)
 //      weight: 2 },
 //   right: null }
 ```
+
+---
+
+Examples of valid _fuzzyStrings_ values include:
+
+```javascript
+// Use the default
+Brauhaus.Diff.configure({
+    fuzzyStrings: true
+});
+
+// Disable fuzzy string matching
+Brauhaus.Diff.configure({
+    fuzzyStrings: false
+});
+
+// Strings can be at most 20% different
+Brauhaus.Diff.configure({
+    fuzzyStrings: 0.2
+});
+
+// Set to a function (this is the default function used in Brauhaus-Diff)
+Brauhaus.Diff.configure({
+    fuzzyStrings: function(left, right) {
+        return Math.max(1 / Math.max(left.length, right.length), 0.25);
+    }
+});
+```
+
+---
 
 If you want the speed gains of disabling _postDiff_ and _postApply_ (~10%), but still want to use the _usingBrauhausStyles_ option, a workaround is as follows:
 
