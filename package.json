@@ -1,6 +1,6 @@
 {
   "name": "brauhaus-diff",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "A recipe difference plugin for Brauhaus.js",
   "homepage": "https://github.com/homebrewing/brauhaus-diff",
   "main": "lib/brauhaus-diff.js",
@@ -43,10 +43,10 @@
     "fast-levenshtein": ">=1.0.0 <2"
   },
   "peerDependencies": {
-    "brauhaus": ">=0.5.4 <1"
+    "brauhaus": ">=1 <2"
   },
   "devDependencies": {
-    "brauhaus": ">=0.5.4 <1",
+    "brauhaus": ">=1 <2",
     "coffee-script": ">=1.6.2 <2",
     "coffeelint": ">=0.5.6 <1",
     "mocha": "1.9.x",
